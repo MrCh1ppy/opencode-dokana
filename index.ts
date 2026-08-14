@@ -6,7 +6,7 @@ import { createPlan } from "./plan"
 import { resolvePrompts } from "./prompts"
 import { invalidFile, validateToml } from "./validate"
 
-const tomlPath = `${Bun.env.HOME ?? ""}/.config/opencode/opencode-photon.toml`
+const tomlPath = `${Bun.env.HOME ?? ""}/.config/opencode/opencode-dokana.toml`
 
 async function readToml(): Promise<{ ok: true; text: string } | { ok: false; message: string }> {
   try {
@@ -16,7 +16,7 @@ async function readToml(): Promise<{ ok: true; text: string } | { ok: false; mes
   }
 }
 
-export default async function photonPlugin(input: PluginInput): Promise<Hooks> {
+export default async function dokanaPlugin(input: PluginInput): Promise<Hooks> {
   return {
     config: async (cfg) => {
       const loaded = await readToml()

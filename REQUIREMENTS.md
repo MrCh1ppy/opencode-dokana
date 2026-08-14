@@ -1,8 +1,8 @@
-# OpenCode Photon Requirements
+# OpenCode Dokana Requirements
 
 ## Purpose and Scope
 
-OpenCode Photon centrally configures the `model`, `variant`, and `prompt` of exactly seven agents: `orchestrator`, `dispatcher`, `explorer`, `low-fixer`, `medium-fixer`, `deep-fixer`, and `oracle`. The first release reads overrides from `~/.config/opencode/opencode-photon.toml`. Failover is out of scope for this release and is reserved for a future version.
+OpenCode Dokana centrally configures the `model`, `variant`, and `prompt` of exactly seven agents: `orchestrator`, `dispatcher`, `explorer`, `low-fixer`, `medium-fixer`, `deep-fixer`, and `oracle`. The first release reads overrides from `~/.config/opencode/opencode-dokana.toml`. Failover is out of scope for this release and is reserved for a future version.
 
 ## Behavior
 
