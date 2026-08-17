@@ -29,7 +29,9 @@ export default async function dokanaPlugin(input: PluginInput): Promise<Hooks> {
       const plan = createPlan(validation)
       const resolved = await resolvePrompts(plan.agents, tomlPath)
       const applied = applyPlan(cfg, plan.agents, resolved.prompts)
-      await notify(input, [...plan.issues, ...resolved.issues], applied)
+      void notify(input, [...plan.issues, ...resolved.issues], applied).catch((error: unknown) => {
+        console.error("[opencode-dokana] notify failed:", error)
+      })
     },
   }
 }
