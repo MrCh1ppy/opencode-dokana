@@ -193,11 +193,11 @@ Fixers 是唯一可以修改源文件的代理。尽管 Dispatcher 和 Explorer 
 ```toml
 [agents.orchestrator]
 model="kimi-for-coding/k3"
-variant="max"
+variant="high"
 
 [agents.dispatcher]
-model="openai/gpt-5.6-terra"
-variant="medium"
+model="openai/gpt-5.6-luna"
+variant="max"
 
 [agents.oracle]
 model="openai/gpt-5.6-sol"
