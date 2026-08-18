@@ -1,11 +1,40 @@
 import type { AgentId } from "./validate"
 
-export type PermissionScalar = "ask" | "allow" | "deny"
-export type PermissionValue = PermissionScalar | Readonly<Record<string, PermissionScalar>>
+export type Action = "allow" | "deny" | "ask"
+export type PermissionScalar = Action
+
+export const PERMISSION_KEYS = {
+  edit: "edit",
+  bash: "bash",
+  externalDirectory: "external_directory",
+  read: "read",
+  question: "question",
+  todowrite: "todowrite",
+  task: "task",
+  webfetch: "webfetch",
+  doomLoop: "doom_loop",
+  glob: "glob",
+  grep: "grep",
+  list: "list",
+  websearch: "websearch",
+  lsp: "lsp",
+} as const
+
+export const TASK_KEYS = {
+  wildcard: "*",
+} as const
+
+type DefaultPermissionKey = (typeof PERMISSION_KEYS)[keyof typeof PERMISSION_KEYS]
+type DefaultTaskKey = (typeof TASK_KEYS)[keyof typeof TASK_KEYS] | AgentId
+type DefaultTask = Readonly<Partial<Record<DefaultTaskKey, Action>>>
+type DefaultPermissionValue = Action | DefaultTask
+
+export type PermissionValue = DefaultPermissionValue
 export type PermissionObject = Readonly<Record<string, unknown>>
 export type PermissionOverride = Readonly<Record<string, unknown>>
 
-type DefaultPermission = Readonly<Record<string, PermissionValue>>
+export type DefaultPermission = Readonly<Partial<Record<Exclude<DefaultPermissionKey, typeof PERMISSION_KEYS.task>, Action>>> &
+  Readonly<{ [PERMISSION_KEYS.task]?: DefaultPermissionValue }>
 
 export const defaultPermissions = {
   // Primary user-facing planner: no direct mutation or shell access.
@@ -92,20 +121,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function clonePermissionValue(value: PermissionValue): PermissionValue {
-  return isRecord(value) ? { ...value } as Readonly<Record<string, PermissionScalar>> : value
+  return isRecord(value) ? { ...value } as DefaultTask : value
 }
 
 function mergeTask(defaultTask: PermissionValue | undefined, overrideTask: unknown): unknown {
   if (!isRecord(overrideTask)) return overrideTask
   const defaults = isRecord(defaultTask) ? defaultTask : {}
   const merged: Record<string, unknown> = {}
-  if ("*" in defaults) merged["*"] = defaults["*"]
-  if ("*" in overrideTask) merged["*"] = overrideTask["*"]
+  if (TASK_KEYS.wildcard in defaults) merged[TASK_KEYS.wildcard] = defaults[TASK_KEYS.wildcard]
+  if (TASK_KEYS.wildcard in overrideTask) merged[TASK_KEYS.wildcard] = overrideTask[TASK_KEYS.wildcard]
   for (const [key, value] of Object.entries(defaults)) {
-    if (key !== "*") merged[key] = value
+    if (key !== TASK_KEYS.wildcard) merged[key] = value
   }
   for (const [key, value] of Object.entries(overrideTask)) {
-    if (key !== "*") merged[key] = value
+    if (key !== TASK_KEYS.wildcard) merged[key] = value
   }
   return merged
 }
@@ -116,7 +145,7 @@ export function effectivePermission(id: AgentId, override?: PermissionOverride):
   for (const [key, value] of Object.entries(defaults)) result[key] = clonePermissionValue(value)
   if (override === undefined) return result
   for (const [key, value] of Object.entries(override)) {
-    result[key] = key === "task" ? mergeTask(defaults.task, value) : value
+    result[key] = key === PERMISSION_KEYS.task ? mergeTask(defaults[PERMISSION_KEYS.task], value) : value
   }
   return result
 }

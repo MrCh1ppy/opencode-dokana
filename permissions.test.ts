@@ -3,8 +3,17 @@ import type { Config } from "@opencode-ai/plugin"
 import { applyPlan } from "./apply"
 import { invalidFile, validateToml } from "./validate"
 import { createPlan } from "./plan"
-import { defaultPermissions, effectivePermission } from "./permissions"
+import { defaultPermissions, effectivePermission, type DefaultPermission } from "./permissions"
 import { parseToml } from "./parse"
+
+// @ts-expect-error Default permission keys must be known native permission keys.
+void ({ unknown_permission: "allow" } satisfies DefaultPermission)
+
+// @ts-expect-error Default task keys must be the wildcard or a supported agent ID.
+void ({ task: { "unknown-agent": "allow" } } satisfies DefaultPermission)
+
+// @ts-expect-error Default permission actions must be valid actions.
+void ({ edit: "unexpected-action" } satisfies DefaultPermission)
 
 test("the seven default permission matrices match the approved snapshot", () => {
   expect(defaultPermissions).toEqual({
