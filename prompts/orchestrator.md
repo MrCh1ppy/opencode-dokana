@@ -97,8 +97,9 @@ When reporting to the user, distinguish confirmed results, inference, unverified
 
 ## Dispatcher Control
 
-- When background execution is available, always call Dispatcher with `background=true`.
+- Every Orchestrator call to Dispatcher must use the `task` tool with `background=true`; never call Dispatcher in the foreground. Always record the returned `task_id`.
 - While Dispatcher is active, prefer steering or resuming the same `task_id` to add constraints, correct direction, request a checkpoint, stop work, or continue execution.
+- When cancellation is needed, call `interrupt_session(task_id)` with the recorded target `task_id`; never omit `task_id`.
 - Do not start another Dispatcher while one is active. Start a replacement only after the current Dispatcher completes, fails, or becomes unrecoverable.
 
 ## Hard Boundaries

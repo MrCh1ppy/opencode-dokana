@@ -2,6 +2,8 @@
 
 opencode-dokana 是一个 OpenCode 插件，通过 `~/.config/opencode/opencode-dokana.toml` 集中管理七个 agent 的 `model`/`variant`/`prompt`/`permission` 覆盖。要求 opencode `>= 1.18.18`；这是面向 opencode Bun plugin loader 的 TypeScript source distribution。
 
+当前版本：`0.4.0`。本版本将 `interrupt_session` 更新为面向子孙 task 的异步 v1 abort 请求，并明确 Orchestrator 与 Dispatcher 的后台/前台调度纪律。
+
 ## 背景
 
 在类 OpenCode 的多 Agent Harness 中，几乎总会存在一个灵魂性的角色：**Orchestrator**。
@@ -163,15 +165,15 @@ Dispatcher 会在获授权的节点内自主推进，不会仅因一次 Speciali
 
 Fixers 是唯一可以修改源文件的代理。尽管 Dispatcher 和 Explorer 具有 `bash: allow`，但它们的提示词规则将 Bash 限制为只读或验证用途。它们绝不能使用 Bash 绕过 `edit: deny` 来修改源文件。
 
-## 中断当前会话
+## 中断子孙任务
 
-插件提供 `interrupt_session` 自定义工具，用于中断当前会话的 active execution。参数可为空对象，也可传入可选的 `reason` 字符串；工具始终使用 tool context 的当前 `sessionID`，并先经过 `interrupt_session` 权限询问。
+插件提供 `interrupt_session` 自定义工具，用于请求取消当前 session 的子孙任务。签名为 `interrupt_session({ task_id: string, reason?: string })`，其中 `task_id` 必填且不能为空；目标不能是当前 session，必须沿目标 session 的 `parentID` 链最终直接连接到当前 session。工具先完成基本 `task_id` 校验，再经过 `interrupt_session` 权限询问，metadata 会包含当前 `sessionID`、目标 `task_id` 以及存在时的 `reason`。
 
 默认权限为 `orchestrator: allow`，`dispatcher`、`explorer`、`low-fixer`、`medium-fixer`、`deep-fixer` 与 `oracle` 均为 `deny`。TOML 可将该 permission 覆盖为 `allow`、`ask` 或 `deny`。
 
-工具仅调用 SDK v2 的 `client.v2.session.interrupt({ sessionID })`，不调用 v1 abort。TUI 的 Esc 中断路径独立，未被此插件改动。若设置 `OPENCODE_SERVER_PASSWORD`，插件会使用 `OPENCODE_SERVER_USERNAME`（默认 `opencode`）发送 HTTP Basic `Authorization`；未设置密码时不会发送该 header。
+工具使用 v1 `client.session.get({ path: { id } })` 验证 parent 链，目标合法后严格调用 `client.session.abort({ path: { id: task_id } })`。该 abort 作用于目标 `BackgroundJob`，遵循递归取消语义；abort 异步生效，返回成功只表示已向目标发送 cancellation request，不等于已确认停止。错误、缺少 data 或 `false` 都会报告为失败，不会伪装成成功。TUI 的 Esc 中断路径独立，未被此插件改动。若设置 `OPENCODE_SERVER_PASSWORD`，插件会使用 `OPENCODE_SERVER_USERNAME`（默认 `opencode`）发送 HTTP Basic `Authorization`；未设置密码时不会发送该 header。
 
-该操作只针对当前 OpenCode process 所拥有的当前 session active execution；idle 或已完成的 session 为 no-op。它不能承诺 detached 或 background task 的中断语义。真实 ask UI 与 active interrupt 的端到端行为尚未完全验证。
+Orchestrator 调用 Dispatcher 必须无条件使用 `task` 工具的 `background=true`，并记录返回的 `task_id`；需要取消时调用 `interrupt_session(task_id)`，不能省略 `task_id`。Dispatcher 调用 Explorer、low-fixer、medium-fixer 或 deep-fixer 时必须无条件前台执行，不得使用 `background=true`。
 
 ## 安装
 

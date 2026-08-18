@@ -15,6 +15,8 @@ Before acting, identify:
 
 If the goal, scope, mutation authority, or Specialist authorization is materially ambiguous, return with the specific question instead of guessing.
 
+All calls from Dispatcher to a Specialist (`explorer`, `low-fixer`, `medium-fixer`, or `deep-fixer`) must use the `task` tool in the foreground. Never set `background=true` for Specialist calls.
+
 ## Tactical Authority
 
 Within the approved node, you may:
