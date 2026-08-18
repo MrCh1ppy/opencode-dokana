@@ -2,13 +2,21 @@
 
 OpenCode Dokana is an OpenCode plugin that applies TOML-driven `model`, `variant`, and `prompt` overrides to the seven supported agents.
 
-## Mounting
+> Requires OpenCode `>= 1.18.18`. This package is a TypeScript source distribution intended for the OpenCode Bun plugin loader, not a general-purpose Node.js package.
 
-Mount the plugin from `./plugins/opencode-dokana`, or install it as the npm package `@cortexkit/opencode-dokana`.
+## Installation
+
+Add the plugin to the `plugin` array in your `opencode.json`:
+
+```json
+{
+  "plugin": ["@mrch1ppy/opencode-dokana"]
+}
+```
 
 ## Configuration
 
-Create `opencode-dokana.toml` in the OpenCode configuration directory:
+Create `opencode-dokana.toml` in the OpenCode configuration directory (`~/.config/opencode/opencode-dokana.toml`):
 
 ```toml
 [agents.dispatcher]
@@ -17,3 +25,5 @@ variant="max"
 ```
 
 For `model` and `variant`, priority is session `ctrl+t` > TOML > frontmatter fallback. For `prompt`, priority is TOML path > built-in default.
+
+Prompts referenced by a TOML `prompt` path must be `.md` files; they are resolved relative to the TOML directory and support `~/` expansion. When no TOML prompt is given, the bundled default at `prompts/<agent-id>.md` is used.

@@ -1,3 +1,35 @@
 {
-  "name": "@cortexkit/opencode-dokana"
+  "name": "@mrch1ppy/opencode-dokana",
+  "version": "0.1.0",
+  "description": "OpenCode plugin that applies TOML-driven model, variant, and prompt overrides to the seven supported agents.",
+  "type": "module",
+  "main": "./index.ts",
+  "files": [
+    "*.ts",
+    "prompts/"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MrCh1ppy/opencode-dokana.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "opencode",
+    "opencode-plugin"
+  ],
+  "engines": {
+    "opencode": ">=1.18.18"
+  },
+  "dependencies": {
+    "toml": "~5.0.0"
+  },
+  "devDependencies": {
+    "@opencode-ai/plugin": "1.18.18",
+    "typescript": "^7.0.2",
+    "@types/bun": "^1.3.14",
+    "@types/node": "^26.2.0"
+  }
 }
