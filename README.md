@@ -1,6 +1,6 @@
 # opencode-dokana
 
-opencode-dokana 是一个 OpenCode 插件，通过 `~/.config/opencode/opencode-dokana.toml` 集中管理七个 agent 的 `model`/`variant`/`prompt` 覆盖。要求 opencode `>= 1.18.18`；这是面向 opencode Bun plugin loader 的 TypeScript source distribution。
+opencode-dokana 是一个 OpenCode 插件，通过 `~/.config/opencode/opencode-dokana.toml` 集中管理七个 agent 的 `model`/`variant`/`prompt`/`permission` 覆盖。要求 opencode `>= 1.18.18`；这是面向 opencode Bun plugin loader 的 TypeScript source distribution。
 
 ## 背景
 
@@ -218,18 +218,59 @@ variant="medium"
 [agents.deep-fixer]
 model="openai/gpt-5.6-sol"
 variant="medium"
+
+[agents.dispatcher.permission]
+edit="deny"
+bash="allow"
+external_directory="ask"
+
+[agents.dispatcher.permission.task]
+"*"="deny"
+explorer="allow"
+"medium-fixer"="allow"
 ```
 
 优先级：
 
 - `model`/`variant`：会话内 `ctrl+t`（临时） > TOML > agent `.md` frontmatter。
 - `prompt`：TOML `prompt` 路径 > 插件内置 `prompts/<agent>.md`。
+- `permission`：TOML > 插件默认矩阵。插件会接管并替换所有 agent-level permission 来源，包括 agent frontmatter 和 `opencode.json`；TOML 未覆盖的 key 保留插件默认值。
+
+`permission` 使用 OpenCode 原生 permission 对象形态。普通 key 直接写在 `[agents.<id>.permission]` 下；`task` 支持标量整体替换：
+
+```toml
+[agents.medium-fixer.permission]
+edit="allow"
+task="deny"
+```
+
+也支持 task 表逐 key 合并：
+
+```toml
+[agents.dispatcher.permission.task]
+"*"="deny"
+"medium-fixer"="allow"
+```
+
+插件不枚举校验 permission key 或 permission value。未知 key 原样透传，非法值交给 OpenCode 自身 schema 在启动时校验。
+
+插件内置默认权限矩阵：
+
+| Agent | 默认 permission |
+| --- | --- |
+| `orchestrator` | `edit: deny`, `bash: deny`, `external_directory: ask`, `read: allow`, `question: allow`, `todowrite: allow`, `task.*: deny`, `task.dispatcher: allow`, `task.oracle: allow` |
+| `dispatcher` | `edit: deny`, `bash: allow`, `todowrite: allow`, `read: allow`, `webfetch: allow`, `doom_loop: allow`, `external_directory: ask`, `task.*: deny`, `task.explorer/low-fixer/medium-fixer/deep-fixer: allow` |
+| `explorer` | `edit: deny`, `bash: allow`, `external_directory: allow`, `task: deny`, `glob: allow`, `grep: allow`, `list: allow`, `webfetch: allow`, `websearch: allow`, `read: allow` |
+| `low-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny` |
+| `medium-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny` |
+| `deep-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny` |
+| `oracle` | `edit: deny`, `bash: deny`, `read: allow`, `grep: allow`, `glob: allow`, `list: allow`, `lsp: allow`, `external_directory: ask`, `task: deny` |
 
 prompt 路径必须为 `.md` 文件，相对 TOML 所在目录解析，支持 `~/` 展开。
 
 错误回退：
 
-- TOML 缺失或解析失败时，本次启动不应用任何覆盖（使用 agent frontmatter 默认）。
+- TOML 缺失或解析失败时，model/variant/prompt 不应用 TOML 覆盖，仍使用各自默认；插件默认 permission 矩阵仍然应用。
 - 单个 agent 的 `model`/`variant` 非法时，该 agent 的这两个字段原子回退到 frontmatter 默认。
 - `prompt` 路径非法或不可读时，回退到插件内置默认 `prompts/<agent>.md`。
 

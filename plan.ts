@@ -5,6 +5,7 @@ export type AgentPlan = {
   model?: string
   variant?: string
   tomlPrompt?: string
+  permission?: import("./permissions").PermissionOverride
 }
 
 export type OverridePlan = {
@@ -19,6 +20,7 @@ export function createPlan(validation: ValidationResult): OverridePlan {
       model: validation.agents[id]?.model,
       variant: validation.agents[id]?.variant,
       tomlPrompt: validation.agents[id]?.prompt,
+      permission: validation.agents[id]?.permission,
     })),
     issues: validation.issues,
   }

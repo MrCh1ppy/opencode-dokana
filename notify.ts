@@ -15,7 +15,7 @@ async function appLog(input: PluginInput, level: "info" | "warn" | "error", mess
 export async function notify(input: PluginInput, issues: Issue[], applied: AppliedAgent[]): Promise<void> {
   for (const issue of issues) await appLog(input, "warn", issue.message)
   for (const agent of applied) {
-    await appLog(input, "info", `${agent.id}: model=${agent.model.source}:${agent.model.value}; variant=${agent.variant.source}:${agent.variant.value}; prompt=${agent.prompt.source}:${agent.prompt.value}`)
+    await appLog(input, "info", `${agent.id}: model=${agent.model.source}:${agent.model.value}; variant=${agent.variant.source}:${agent.variant.value}; prompt=${agent.prompt.source}:${agent.prompt.value}; permission=${agent.permission.source}`)
   }
   const message = issues.length === 0 ? "Dokana agent overrides applied" : `Dokana 配置完成，发现 ${issues.length} 个问题：${issues.map((issue) => issue.message).join("；")}`
   try {

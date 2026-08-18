@@ -1,12 +1,14 @@
 import type { Config } from "@opencode-ai/plugin"
 import type { AgentPlan } from "./plan"
 import type { ResolvedPrompt } from "./prompts"
+import { effectivePermission, type PermissionObject } from "./permissions"
 
 export type AppliedAgent = {
   id: AgentPlan["id"]
   model: { source: "default" | "toml-override"; value: string }
   variant: { source: "default" | "toml-override"; value: string }
   prompt: { source: ResolvedPrompt["source"]; value: string }
+  permission: { source: "default" | "toml-override"; value: PermissionObject }
 }
 
 function existingString(value: unknown): string {
@@ -26,12 +28,15 @@ export function applyPlan(cfg: Config, plans: AgentPlan[], prompts: ResolvedProm
       update.variant = plan.variant
     }
     if (prompt?.content !== undefined) update.prompt = prompt.content
-    agent[plan.id] = { ...current, ...update }
+    const permission = effectivePermission(plan.id, plan.permission)
+    const updated = { ...current, ...update, permission }
+    agent[plan.id] = updated as unknown as typeof agent[typeof plan.id]
     applied.push({
       id: plan.id,
       model: { source: update.model === undefined ? "default" : "toml-override", value: update.model ?? existingString(current.model) },
       variant: { source: update.variant === undefined ? "default" : "toml-override", value: update.variant ?? existingString(current.variant) },
       prompt: { source: prompt?.source ?? "not-applied", value: prompt?.content === undefined ? "(not applied)" : prompt.path },
+      permission: { source: plan.permission === undefined ? "default" : "toml-override", value: permission },
     })
   }
   cfg.agent = agent

@@ -6,9 +6,11 @@ import { createPlan } from "./plan"
 import { resolvePrompts } from "./prompts"
 import { invalidFile, validateToml } from "./validate"
 
-const tomlPath = `${Bun.env.HOME ?? ""}/.config/opencode/opencode-dokana.toml`
+function getTomlPath(): string {
+  return `${process.env.HOME ?? Bun.env.HOME ?? ""}/.config/opencode/opencode-dokana.toml`
+}
 
-async function readToml(): Promise<{ ok: true; text: string } | { ok: false; message: string }> {
+async function readToml(tomlPath: string): Promise<{ ok: true; text: string } | { ok: false; message: string }> {
   try {
     return { ok: true, text: await Bun.file(tomlPath).text() }
   } catch (error: unknown) {
@@ -19,7 +21,8 @@ async function readToml(): Promise<{ ok: true; text: string } | { ok: false; mes
 export default async function dokanaPlugin(input: PluginInput): Promise<Hooks> {
   return {
     config: async (cfg) => {
-      const loaded = await readToml()
+      const tomlPath = getTomlPath()
+      const loaded = await readToml(tomlPath)
       const validation = !loaded.ok
         ? invalidFile(`TOML unavailable: ${loaded.message}`)
         : (() => {

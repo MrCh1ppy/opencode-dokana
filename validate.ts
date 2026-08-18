@@ -1,3 +1,5 @@
+import type { PermissionOverride } from "./permissions"
+
 export const agentIds = [
   "orchestrator",
   "dispatcher",
@@ -19,6 +21,7 @@ type AgentOverride = {
   model?: string
   variant?: string
   prompt?: string
+  permission?: PermissionOverride
 }
 
 export type ValidationResult = {
@@ -71,13 +74,15 @@ export function validateToml(value: unknown): ValidationResult {
     const override: AgentOverride = {}
     const model = rawAgent.model
     const variant = rawAgent.variant
-    const modelValid = nonEmptyString(model) && model.includes("/") && !model.startsWith("/") && !model.endsWith("/")
-    const variantValid = nonEmptyString(variant)
-    if (modelValid && variantValid) {
-      override.model = model
-      override.variant = variant
-    } else {
-      issues.push({ level: "warning", message: `Invalid model/variant for ${id}; both fields fall back to agent defaults` })
+    if (model !== undefined || variant !== undefined) {
+      const modelValid = nonEmptyString(model) && model.includes("/") && !model.startsWith("/") && !model.endsWith("/")
+      const variantValid = nonEmptyString(variant)
+      if (modelValid && variantValid) {
+        override.model = model
+        override.variant = variant
+      } else {
+        issues.push({ level: "warning", message: `Invalid model/variant for ${id}; both fields fall back to agent defaults` })
+      }
     }
 
     const prompt = rawAgent.prompt
@@ -86,6 +91,14 @@ export function validateToml(value: unknown): ValidationResult {
         override.prompt = prompt
       } else {
         issues.push({ level: "warning", message: `Invalid prompt path for ${id}; plugin default will be used` })
+      }
+    }
+    const permission = rawAgent.permission
+    if (permission !== undefined) {
+      if (isRecord(permission)) {
+        override.permission = permission
+      } else {
+        issues.push({ level: "warning", message: `Invalid permission table for ${id}; plugin defaults will be used` })
       }
     }
     agents[id] = override

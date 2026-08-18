@@ -2,27 +2,27 @@
 
 ## Purpose and Scope
 
-OpenCode Dokana centrally configures the `model`, `variant`, and `prompt` of exactly seven agents: `orchestrator`, `dispatcher`, `explorer`, `low-fixer`, `medium-fixer`, `deep-fixer`, and `oracle`. The first release reads overrides from `~/.config/opencode/opencode-dokana.toml`. Failover is out of scope for this release and is reserved for a future version.
+OpenCode Dokana centrally configures the `model`, `variant`, `prompt`, and `permission` of exactly seven agents: `orchestrator`, `dispatcher`, `explorer`, `low-fixer`, `medium-fixer`, `deep-fixer`, and `oracle`. The plugin reads overrides from `~/.config/opencode/opencode-dokana.toml`.
 
 ## Behavior
 
-The plugin registers exactly one `config` hook. At startup, that hook loads the configuration through this pipeline: read TOML, parse, validate, plan, resolve and read prompts, apply, then notify. Application shallow-merges only `model`, `variant`, and `prompt`; no other agent fields are changed. The plan is complete before application begins, so there is no half-applied state.
+The plugin registers exactly one `config` hook. At startup, that hook loads the configuration through this pipeline: read TOML, parse, validate, plan, resolve and read prompts, apply, then notify. Each agent receives a newly constructed effective permission object from the plugin default matrix and its TOML permission fragment. The permission object replaces every existing agent-level permission source, including frontmatter and `opencode.json`; all other agent fields are preserved. The plan is complete before application begins, so there is no half-applied state.
 
 ## Priority
 
-For `model` and `variant`, the priority is session-level `ctrl+t` selection, then TOML, then the `.md` agent frontmatter fallback. For `prompt`, a TOML prompt path takes priority over the bundled plugin default at `prompts/<id>.md`.
+For `model` and `variant`, the priority is session-level `ctrl+t` selection, then TOML, then the `.md` agent frontmatter fallback. For `prompt`, a TOML prompt path takes priority over the bundled plugin default at `prompts/<id>.md`. For `permission`, TOML overrides plugin defaults, and the effective object replaces all agent-level sources.
 
 ## TOML Schema
 
-The root configuration uses an `agents` table. Each `agents.<id>.model` is required and must be non-empty, contain `/`, and have non-empty text on both sides of the slash. Each `variant` is required, non-empty, and passed through without an enum restriction. `prompt` is optional, must be a `.md` path, is resolved relative to the TOML directory, and supports `~/`; inline prompt content is not supported. Unknown agent IDs and unknown top-level keys are ignored.
+The root configuration uses an `agents` table. `model` and `variant` are validated as an atomic pair only when either field is present. `model` must be non-empty, contain `/`, and have non-empty text on both sides; `variant` must be non-empty and has no enum restriction. `prompt` is optional, must be a `.md` path, is resolved relative to the TOML directory, and supports `~/`; inline prompt content is not supported. Permission fields use the native OpenCode object shape under `[agents.<id>.permission]`. Flat permission keys are passed through unchanged. `task` may be a scalar (`task = "deny"`) or a table (`[agents.<id>.permission.task]`), with table keys merged individually. Unknown permission keys and permission values are passed through unchanged; OpenCode performs enum/schema validation at startup. Unknown agent IDs and unknown top-level keys retain the existing ignored-with-warning behavior.
 
 ## Error Handling
 
-File-level errors, including a missing TOML file, TOML syntax error, or missing `agents` table, prevent overrides from applying for that startup while bundled default prompts still load. Unknown agent entries are ignored. Invalid `model` or `variant` causes those two fields to atomically fall back to `.md` defaults; an invalid or unreadable `prompt` falls back to the bundled default prompt. A missing bundled default prompt does not crash startup. Detailed events are recorded through `appLog` and summarized in a toast. Startup reports an override inventory with `default`, `toml-override`, or `not-applied` sources.
+File-level errors, including a missing TOML file, TOML syntax error, or missing `agents` table, prevent TOML overrides from applying for that startup while plugin default permissions and bundled default prompts still load. Unknown agent entries are ignored. Invalid `model` or `variant` causes those two fields to atomically fall back to `.md` defaults; permission-only TOML does not produce model/variant warnings. Permission values are never enum-validated by the plugin. An invalid or unreadable `prompt` falls back to the bundled default prompt. A missing bundled default prompt does not crash startup. Detailed events are recorded through `appLog` and summarized in a toast. Startup reports an override inventory with `default`, `toml-override`, or `not-applied` sources and issue summaries.
 
 ## Acceptance Highlights
 
-Stage 5 acceptance covers the 28 baseline, priority, error-path, boundary, and quality checks. It verifies all seven baseline TOML overrides, session-level selection precedence, TOML and frontmatter fallbacks, TOML prompt overrides and bundled prompt migration, missing and malformed TOML handling, missing `agents`, unknown keys and agents, invalid model, variant, and prompt fields, unreadable prompt paths, missing bundled prompts, atomic field behavior, no partial application, source inventory reporting, one-hook registration, narrow three-field application, supported relative and home-expanded paths, strict TypeScript quality, `bun` and `tsc` gates, and a clean V3 Git baseline.
+Stage 6 acceptance covers the baseline, priority, error-path, boundary, and quality checks. It verifies the seven default permission matrices, TOML permission overrides, task merge ordering and scalar replacement, unknown permission passthrough, model/variant/prompt/permission error isolation, all seven baseline overrides, prompt fallback behavior, source inventory reporting, one-hook registration, preservation of unrelated agent fields, supported paths, strict TypeScript quality, and `bun` and `tsc` gates.
 
 ## Constraints
 
