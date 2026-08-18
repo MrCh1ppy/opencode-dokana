@@ -6,7 +6,7 @@ OpenCode Dokana centrally configures the `model`, `variant`, `prompt`, and `perm
 
 ## Behavior
 
-The plugin registers exactly one `config` hook. At startup, that hook loads the configuration through this pipeline: read TOML, parse, validate, plan, resolve and read prompts, apply, then notify. Each agent receives a newly constructed effective permission object from the plugin default matrix and its TOML permission fragment. The permission object replaces every existing agent-level permission source, including frontmatter and `opencode.json`; all other agent fields are preserved. The plan is complete before application begins, so there is no half-applied state.
+The plugin registers one `config` hook and the `interrupt_session` custom tool. At startup, the config hook loads the configuration through this pipeline: read TOML, parse, validate, plan, resolve and read prompts, apply, then notify. Each agent receives a newly constructed effective permission object from the plugin default matrix and its TOML permission fragment. The permission object replaces every existing agent-level permission source, including frontmatter and `opencode.json`; all other agent fields are preserved. The plan is complete before application begins, so there is no half-applied state.
 
 ## Priority
 
@@ -16,14 +16,16 @@ For `model` and `variant`, the priority is session-level `ctrl+t` selection, the
 
 The root configuration uses an `agents` table. `model` and `variant` are validated as an atomic pair only when either field is present. `model` must be non-empty, contain `/`, and have non-empty text on both sides; `variant` must be non-empty and has no enum restriction. `prompt` is optional, must be a `.md` path, is resolved relative to the TOML directory, and supports `~/`; inline prompt content is not supported. Permission fields use the native OpenCode object shape under `[agents.<id>.permission]`. Flat permission keys are passed through unchanged. `task` may be a scalar (`task = "deny"`) or a table (`[agents.<id>.permission.task]`), with table keys merged individually. Unknown permission keys and permission values are passed through unchanged; OpenCode performs enum/schema validation at startup. Unknown agent IDs and unknown top-level keys retain the existing ignored-with-warning behavior.
 
+`interrupt_session` is a Dokana custom permission key. Its defaults are `allow` for `orchestrator` and `deny` for every other supported agent; TOML may override it with `allow`, `ask`, or `deny`. The tool uses only `client.v2.session.interrupt({ sessionID })`; it does not use a v1 abort API. The independent TUI Esc path is not changed. The v2 client uses the plugin server URL and directory. When `OPENCODE_SERVER_PASSWORD` is present, it sends HTTP Basic authentication with `OPENCODE_SERVER_USERNAME` or the default username `opencode`.
+
 ## Error Handling
 
 File-level errors, including a missing TOML file, TOML syntax error, or missing `agents` table, prevent TOML overrides from applying for that startup while plugin default permissions and bundled default prompts still load. Unknown agent entries are ignored. Invalid `model` or `variant` causes those two fields to atomically fall back to `.md` defaults; permission-only TOML does not produce model/variant warnings. Permission values are never enum-validated by the plugin. An invalid or unreadable `prompt` falls back to the bundled default prompt. A missing bundled default prompt does not crash startup. Detailed events are recorded through `appLog` and summarized in a toast. Startup reports an override inventory with `default`, `toml-override`, or `not-applied` sources and issue summaries.
 
 ## Acceptance Highlights
 
-Stage 6 acceptance covers the baseline, priority, error-path, boundary, and quality checks. It verifies the seven default permission matrices, TOML permission overrides, task merge ordering and scalar replacement, unknown permission passthrough, model/variant/prompt/permission error isolation, all seven baseline overrides, prompt fallback behavior, source inventory reporting, one-hook registration, preservation of unrelated agent fields, supported paths, strict TypeScript quality, and `bun` and `tsc` gates.
+Stage 6 acceptance covers the baseline, priority, error-path, boundary, and quality checks. It verifies the seven default permission matrices, TOML permission overrides, task merge ordering and scalar replacement, unknown permission passthrough, model/variant/prompt/permission error isolation, all seven baseline overrides, prompt fallback behavior, source inventory reporting, config-hook and tool registration, preservation of unrelated agent fields, supported paths, strict TypeScript quality, and `bun` and `tsc` gates.
 
 ## Constraints
 
-Source uses strict TypeScript, has no `any`, no silent catches, and no unused exports. The only permitted external dependency is `toml`. Source code is English; user-visible wording may be Chinese. The target OpenCode version is `1.18.18`.
+Source uses strict TypeScript, has no `any`, no silent catches, and no unused exports. Runtime dependencies are `toml`, `@opencode-ai/sdk`, and `zod`; `@opencode-ai/plugin` remains a development dependency for plugin types. Source code is English; user-visible wording may be Chinese. The target OpenCode version is `1.18.18`.

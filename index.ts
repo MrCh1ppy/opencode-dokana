@@ -1,5 +1,6 @@
 import type { Hooks, PluginInput } from "@opencode-ai/plugin"
 import { applyPlan } from "./apply"
+import { createInterruptSessionTool } from "./interrupt-session"
 import { notify } from "./notify"
 import { parseToml } from "./parse"
 import { createPlan } from "./plan"
@@ -20,6 +21,9 @@ async function readToml(tomlPath: string): Promise<{ ok: true; text: string } | 
 
 export default async function dokanaPlugin(input: PluginInput): Promise<Hooks> {
   return {
+    tool: {
+      interrupt_session: createInterruptSessionTool(input),
+    },
     config: async (cfg) => {
       const tomlPath = getTomlPath()
       const loaded = await readToml(tomlPath)

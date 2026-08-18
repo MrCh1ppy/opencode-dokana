@@ -17,13 +17,13 @@ void ({ edit: "unexpected-action" } satisfies DefaultPermission)
 
 test("the seven default permission matrices match the approved snapshot", () => {
   expect(defaultPermissions).toEqual({
-    orchestrator: { edit: "deny", bash: "deny", external_directory: "ask", read: "allow", question: "allow", todowrite: "allow", task: { "*": "deny", dispatcher: "allow", oracle: "allow" } },
-    dispatcher: { edit: "deny", bash: "allow", todowrite: "allow", read: "allow", webfetch: "allow", doom_loop: "allow", external_directory: "ask", task: { "*": "deny", explorer: "allow", "low-fixer": "allow", "medium-fixer": "allow", "deep-fixer": "allow" } },
-    explorer: { edit: "deny", bash: "allow", external_directory: "allow", task: "deny", glob: "allow", grep: "allow", list: "allow", webfetch: "allow", websearch: "allow", read: "allow" },
-    "low-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny" },
-    "medium-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny" },
-    "deep-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny" },
-    oracle: { edit: "deny", bash: "deny", read: "allow", grep: "allow", glob: "allow", list: "allow", lsp: "allow", external_directory: "ask", task: "deny" },
+    orchestrator: { edit: "deny", bash: "deny", external_directory: "ask", read: "allow", question: "allow", todowrite: "allow", interrupt_session: "allow", task: { "*": "deny", dispatcher: "allow", oracle: "allow" } },
+    dispatcher: { edit: "deny", bash: "allow", todowrite: "allow", read: "allow", webfetch: "allow", doom_loop: "allow", external_directory: "ask", interrupt_session: "deny", task: { "*": "deny", explorer: "allow", "low-fixer": "allow", "medium-fixer": "allow", "deep-fixer": "allow" } },
+    explorer: { edit: "deny", bash: "allow", external_directory: "allow", task: "deny", glob: "allow", grep: "allow", list: "allow", webfetch: "allow", websearch: "allow", read: "allow", interrupt_session: "deny" },
+    "low-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny" },
+    "medium-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny" },
+    "deep-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny" },
+    oracle: { edit: "deny", bash: "deny", read: "allow", grep: "allow", glob: "allow", list: "allow", lsp: "allow", external_directory: "ask", task: "deny", interrupt_session: "deny" },
   })
 })
 
@@ -49,6 +49,30 @@ test("permission overrides retain defaults and pass unknown keys and values thro
   const permission = effectivePermission("explorer", validation.agents.explorer?.permission)
   const expected = { ...defaultPermissions.explorer, read: "deny", future_permission: "unexpected-value" }
   expect(permission).toEqual(expected)
+})
+
+test("interrupt_session overrides support allow, ask, and deny", () => {
+  for (const action of ["allow", "ask", "deny"] as const) {
+    const validation = validateToml({
+      agents: { dispatcher: { permission: { interrupt_session: action } } },
+    })
+    expect(validation.issues).toEqual([])
+    expect(effectivePermission("dispatcher", validation.agents.dispatcher?.permission).interrupt_session).toBe(action)
+  }
+})
+
+test("invalid interrupt_session values pass through without plugin issues", () => {
+  const validation = validateToml({
+    agents: { dispatcher: { permission: { interrupt_session: "bad-value" } } },
+  })
+  expect(validation.issues).toEqual([])
+  expect(effectivePermission("dispatcher", validation.agents.dispatcher?.permission).interrupt_session).toBe("bad-value")
+})
+
+test("interrupt_session merges independently for every agent", () => {
+  for (const id of Object.keys(defaultPermissions) as Array<keyof typeof defaultPermissions>) {
+    expect(effectivePermission(id, { interrupt_session: "ask" }).interrupt_session).toBe("ask")
+  }
 })
 
 test("task tables merge by key with wildcard first", () => {

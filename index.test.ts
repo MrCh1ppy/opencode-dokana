@@ -22,6 +22,8 @@ test("the config hook replaces existing permission while preserving other agent 
     process.env.HOME = home
 
     const input = {
+      directory: home,
+      serverUrl: new URL("http://127.0.0.1:4096"),
       client: {
         app: { log: async () => undefined },
         tui: { showToast: async () => undefined },
@@ -55,6 +57,7 @@ test("the config hook replaces existing permission while preserving other agent 
       webfetch: "allow",
       doom_loop: "allow",
       external_directory: "ask",
+      interrupt_session: "deny",
       task: { "*": "ask", explorer: "allow", "low-fixer": "allow", "medium-fixer": "allow", "deep-fixer": "allow", oracle: "allow" },
       custom_permission: "not-an-opencode-enum",
     })

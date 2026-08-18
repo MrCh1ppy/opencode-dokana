@@ -159,8 +159,19 @@ Dispatcher 会在获授权的节点内自主推进，不会仅因一次 Speciali
 | task -> oracle | allow | deny | deny | deny | deny |
 | task -> explorer | deny | allow | deny | deny | deny |
 | task -> fixers | deny | allow | deny | deny | deny |
+| interrupt_session | allow | deny | deny | deny | deny |
 
 Fixers 是唯一可以修改源文件的代理。尽管 Dispatcher 和 Explorer 具有 `bash: allow`，但它们的提示词规则将 Bash 限制为只读或验证用途。它们绝不能使用 Bash 绕过 `edit: deny` 来修改源文件。
+
+## 中断当前会话
+
+插件提供 `interrupt_session` 自定义工具，用于中断当前会话的 active execution。参数可为空对象，也可传入可选的 `reason` 字符串；工具始终使用 tool context 的当前 `sessionID`，并先经过 `interrupt_session` 权限询问。
+
+默认权限为 `orchestrator: allow`，`dispatcher`、`explorer`、`low-fixer`、`medium-fixer`、`deep-fixer` 与 `oracle` 均为 `deny`。TOML 可将该 permission 覆盖为 `allow`、`ask` 或 `deny`。
+
+工具仅调用 SDK v2 的 `client.v2.session.interrupt({ sessionID })`，不调用 v1 abort。TUI 的 Esc 中断路径独立，未被此插件改动。若设置 `OPENCODE_SERVER_PASSWORD`，插件会使用 `OPENCODE_SERVER_USERNAME`（默认 `opencode`）发送 HTTP Basic `Authorization`；未设置密码时不会发送该 header。
+
+该操作只针对当前 OpenCode process 所拥有的当前 session active execution；idle 或已完成的 session 为 no-op。它不能承诺 detached 或 background task 的中断语义。真实 ask UI 与 active interrupt 的端到端行为尚未完全验证。
 
 ## 安装
 
@@ -184,7 +195,7 @@ Fixers 是唯一可以修改源文件的代理。尽管 Dispatcher 和 Explorer 
 }
 ```
 
-仓库内需执行一次 `bun install` 以解析 `toml` 依赖。
+仓库内需执行一次 `bun install` 以解析 `toml`、`@opencode-ai/sdk` 和 `zod` runtime 依赖。
 
 ## 配置
 
@@ -223,6 +234,7 @@ variant="medium"
 edit="deny"
 bash="allow"
 external_directory="ask"
+interrupt_session="ask"
 
 [agents.dispatcher.permission.task]
 "*"="deny"
@@ -258,13 +270,13 @@ task="deny"
 
 | Agent | 默认 permission |
 | --- | --- |
-| `orchestrator` | `edit: deny`, `bash: deny`, `external_directory: ask`, `read: allow`, `question: allow`, `todowrite: allow`, `task.*: deny`, `task.dispatcher: allow`, `task.oracle: allow` |
-| `dispatcher` | `edit: deny`, `bash: allow`, `todowrite: allow`, `read: allow`, `webfetch: allow`, `doom_loop: allow`, `external_directory: ask`, `task.*: deny`, `task.explorer/low-fixer/medium-fixer/deep-fixer: allow` |
-| `explorer` | `edit: deny`, `bash: allow`, `external_directory: allow`, `task: deny`, `glob: allow`, `grep: allow`, `list: allow`, `webfetch: allow`, `websearch: allow`, `read: allow` |
-| `low-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny` |
-| `medium-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny` |
-| `deep-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny` |
-| `oracle` | `edit: deny`, `bash: deny`, `read: allow`, `grep: allow`, `glob: allow`, `list: allow`, `lsp: allow`, `external_directory: ask`, `task: deny` |
+| `orchestrator` | `edit: deny`, `bash: deny`, `external_directory: ask`, `read: allow`, `question: allow`, `todowrite: allow`, `interrupt_session: allow`, `task.*: deny`, `task.dispatcher: allow`, `task.oracle: allow` |
+| `dispatcher` | `edit: deny`, `bash: allow`, `todowrite: allow`, `read: allow`, `webfetch: allow`, `doom_loop: allow`, `external_directory: ask`, `interrupt_session: deny`, `task.*: deny`, `task.explorer/low-fixer/medium-fixer/deep-fixer: allow` |
+| `explorer` | `edit: deny`, `bash: allow`, `external_directory: allow`, `task: deny`, `glob: allow`, `grep: allow`, `list: allow`, `webfetch: allow`, `websearch: allow`, `read: allow`, `interrupt_session: deny` |
+| `low-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny`, `interrupt_session: deny` |
+| `medium-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny`, `interrupt_session: deny` |
+| `deep-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny`, `interrupt_session: deny` |
+| `oracle` | `edit: deny`, `bash: deny`, `read: allow`, `grep: allow`, `glob: allow`, `list: allow`, `lsp: allow`, `external_directory: ask`, `task: deny`, `interrupt_session: deny` |
 
 prompt 路径必须为 `.md` 文件，相对 TOML 所在目录解析，支持 `~/` 展开。
 

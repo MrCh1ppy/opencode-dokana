@@ -18,6 +18,7 @@ export const PERMISSION_KEYS = {
   list: "list",
   websearch: "websearch",
   lsp: "lsp",
+  interruptSession: "interrupt_session",
 } as const
 
 export const TASK_KEYS = {
@@ -45,6 +46,7 @@ export const defaultPermissions = {
     read: "allow",
     question: "allow",
     todowrite: "allow",
+    interrupt_session: "allow",
     task: {
       "*": "deny",
       dispatcher: "allow",
@@ -60,6 +62,7 @@ export const defaultPermissions = {
     webfetch: "allow",
     doom_loop: "allow",
     external_directory: "ask",
+    interrupt_session: "deny",
     task: {
       "*": "deny",
       explorer: "allow",
@@ -80,6 +83,7 @@ export const defaultPermissions = {
     webfetch: "allow",
     websearch: "allow",
     read: "allow",
+    interrupt_session: "deny",
   },
   // Low-risk reversible implementer.
   "low-fixer": {
@@ -87,6 +91,7 @@ export const defaultPermissions = {
     bash: "allow",
     external_directory: "allow",
     task: "deny",
+    interrupt_session: "deny",
   },
   // Standard multi-file implementer.
   "medium-fixer": {
@@ -94,6 +99,7 @@ export const defaultPermissions = {
     bash: "allow",
     external_directory: "allow",
     task: "deny",
+    interrupt_session: "deny",
   },
   // High-risk implementer for approved complex changes.
   "deep-fixer": {
@@ -101,6 +107,7 @@ export const defaultPermissions = {
     bash: "allow",
     external_directory: "allow",
     task: "deny",
+    interrupt_session: "deny",
   },
   // Read-only architecture and root-cause advisor.
   oracle: {
@@ -113,6 +120,7 @@ export const defaultPermissions = {
     lsp: "allow",
     external_directory: "ask",
     task: "deny",
+    interrupt_session: "deny",
   },
 } as const satisfies Readonly<Record<AgentId, DefaultPermission>>
 
