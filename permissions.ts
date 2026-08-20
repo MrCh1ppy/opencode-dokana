@@ -46,6 +46,11 @@ export const defaultPermissions = {
     read: "allow",
     question: "allow",
     todowrite: "allow",
+    grep: "deny",
+    glob: "deny",
+    list: "deny",
+    webfetch: "deny",
+    websearch: "deny",
     interrupt_session: "allow",
     task: {
       "*": "deny",

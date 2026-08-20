@@ -17,7 +17,7 @@ void ({ edit: "unexpected-action" } satisfies DefaultPermission)
 
 test("the seven default permission matrices match the approved snapshot", () => {
   expect(defaultPermissions).toEqual({
-    orchestrator: { edit: "deny", bash: "deny", external_directory: "ask", read: "allow", question: "allow", todowrite: "allow", interrupt_session: "allow", task: { "*": "deny", dispatcher: "allow", oracle: "allow" } },
+    orchestrator: { edit: "deny", bash: "deny", external_directory: "ask", read: "allow", question: "allow", todowrite: "allow", grep: "deny", glob: "deny", list: "deny", webfetch: "deny", websearch: "deny", interrupt_session: "allow", task: { "*": "deny", dispatcher: "allow", oracle: "allow" } },
     dispatcher: { edit: "deny", bash: "allow", todowrite: "allow", read: "allow", webfetch: "allow", doom_loop: "allow", external_directory: "ask", interrupt_session: "deny", task: { "*": "deny", explorer: "allow", "low-fixer": "allow", "medium-fixer": "allow", "deep-fixer": "allow" } },
     explorer: { edit: "deny", bash: "allow", external_directory: "allow", task: "deny", glob: "allow", grep: "allow", list: "allow", webfetch: "allow", websearch: "allow", read: "allow", interrupt_session: "deny" },
     "low-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny" },
