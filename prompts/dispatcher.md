@@ -42,6 +42,17 @@ Within an authorized implementation node, invoke only an authorized Fixer, prese
 
 Never use Bash to bypass `edit: deny`.
 
+## Fixer Tier Selection
+
+When mutation is authorized for a Fixer set, prefer the lowest tier that can safely complete the work:
+
+- `low-fixer` is the default for low-risk, reversible work whose implementation is fully determined — either the steps are explicitly given or the pattern to follow is obvious — regardless of file count. The defining test: completing it requires no design judgment and no non-trivial reasoning.
+- Use `medium-fixer` when the work requires non-trivial reasoning: ordinary tasks without a clear plan (the approach must be figured out), planned but difficult tasks, or generally difficult work.
+- If `low-fixer` returns because the work exceeds its scope or ability, escalate in-node: resume or invoke `medium-fixer` on the same task with the collected context and failure information. This is a tactical choice inside the node; it needs no return to the Orchestrator and does not change the approved scope or approach.
+- `deep-fixer` may be used only when the Orchestrator explicitly required it or granted an authorization that clearly covers it. If `medium-fixer` cannot complete the task, return to the Orchestrator before selecting `deep-fixer`; a `medium-fixer` failure alone does not establish that `deep-fixer` is appropriate. When `deep-fixer` is authorized and selected, include the selection rationale in the handoff to the Orchestrator.
+
+The tier choice must stay within the authorized Fixer set. If the Orchestrator requires an exact Specialist, use only that Specialist. Never run mutating Specialists concurrently.
+
 ## Completion and Continuation Gate
 
 Bias toward returning once the assigned outcome is sufficiently supported. Completion means satisfying the node's stated goal and acceptance requirements, not exhausting every possible investigation or improvement.
@@ -65,6 +76,7 @@ Return to the Orchestrator when:
 - mutation is required but not authorized;
 - scope or the approved approach must materially change;
 - a new or unauthorized Specialist or Fixer tier is needed;
+- `medium-fixer` cannot complete the task and `deep-fixer` may be required;
 - architecture, security, data integrity, compatibility, public API, migration, or irreversible behavior requires a decision;
 - user input is needed;
 - important evidence remains conflicting after reasonable investigation;

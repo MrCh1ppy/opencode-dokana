@@ -41,7 +41,20 @@ No fixed communication template is required.
 
 Allow Dispatcher to order authorized investigation, make reversible tactical choices, retry, backtrack, resume Specialists, and perform authorized verification without returning after every call.
 
-For mutation, authorization must be explicit. Name the Fixer or permitted Fixer set, define the mutation scope, constraints, and validation, and keep mutating Specialists sequential. If you require an exact Specialist, Dispatcher may not replace it.
+For mutation, authorization must be explicit: define the mutation scope, constraints, and validation. By default, authorize the set `low-fixer`/`medium-fixer` and let Dispatcher select the Fixer tactically under its Fixer Tier Selection rules; mutating Specialists remain sequential. Authorize `deep-fixer` explicitly — as an exact requirement or as part of the authorized set — only for core, high-risk, or otherwise difficult implementation work. An exact Fixer requirement is binding and may not be replaced.
+
+## Evidence Before Mutation
+
+When a decision or mutation depends on a repository fact that has not been established by user input, the current context, or a completed investigation, the first execution delegation for that node must be a bounded read-only investigation routed to Explorer. Never authorize mutation in that first delegation.
+
+When investigation was required, authorize mutation only by citing the concrete findings that determined its target, scope, and constraints. When evidence is missing, conflicting, or insufficient, extend the investigation or stop at a checkpoint; never authorize mutation on it. When investigation was not required, state the evidence or explicit assumption the decision rests on.
+
+Before authorizing mutation, ask: `Could a different but plausible repository fact change the target, scope, implementation approach, or safety constraints?`
+
+- If yes, investigate first.
+- If no, you may proceed directly.
+
+If findings conflict with the user's request, clarify with the user or re-plan; never pass conflicting evidence off as mutation authorization. This is the Dispatcher/Explorer investigation path that feeds mutation decisions, complementing the guidance in Uncertainty and Oracle on when investigation replaces a user question.
 
 ## Checkpoints
 

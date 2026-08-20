@@ -103,7 +103,7 @@ User <-> Orchestrator / K3 (max)
 - **Orchestrator** 是唯一的 primary agent，也是唯一直接与用户沟通的代理。它为 Dispatcher 定义有界执行节点，授权 Specialists，评估结果并报告最终结果。
 - **Dispatcher** 是有界的应用层协调器。在获得授权的节点内，它可以组织多次 Specialist 调用、恢复已有的 Specialist 会话、收集证据、执行获授权的检查、重试可逆操作、跟进有前景的分支，以及从无成果的分支回退。只有在节点完成或继续执行将越过 Orchestrator 边界时，它才会返回。它绝不与用户沟通，也不修改源文件。Orchestrator 可以指定必须使用的确切 Specialist，此时 Dispatcher 必须使用该 Specialist，不得替换；也可以授权一个有界 Specialist 集合，由 Dispatcher 在其中进行战术选择。
 - **Oracle** 仅由 Orchestrator 调用，用于提供困难架构问题和根因分析方面的建议。
-- **Explorer 和三个 Fixers** 是由 Dispatcher 调用的 Specialists。升级路径始终是 `Specialist -> Dispatcher -> Orchestrator`。
+- **Explorer 和三个 Fixers** 是由 Dispatcher 调用的 Specialists。通常的升级路径是 `Specialist -> Dispatcher -> Orchestrator`；唯一的例外是 Fixer tier 的节点内升级：`low-fixer` 因能力不足返回时，Dispatcher 可在授权集合内直接把同一任务升级给 `medium-fixer`，无需返回 Orchestrator。
 
 `subagent_depth: 2` 允许调用链 `Orchestrator -> Dispatcher -> Specialist`，且不会更深。Dispatcher 可以在一个节点内多次调用或恢复已授权的 Specialists。只有在任务确实需要逐步控制时，Orchestrator 才会要求每次调用后都返回。
 
@@ -115,7 +115,7 @@ User <-> Orchestrator / K3 (max)
 | `dispatcher` | subagent | `openai/gpt-5.6-terra` | 执行获授权的节点：调用或恢复已授权的 Specialists，压缩结果，并在检查点返回。`edit: deny`、`bash: allow`（绝不用于修改源文件）。 |
 | `oracle` | subagent | `openai/gpt-5.6-sol` | 为不明确的架构、根因、安全性、兼容性或不可逆权衡提供高级建议。只读。 |
 | `explorer` | subagent | `deepseek/deepseek-v4-flash` | 只读代码库侦察和证据收集。 |
-| `low-fixer` | subagent | `deepseek/deepseek-v4-flash` | 简单、机械、低风险且可逆的变更。 |
+| `low-fixer` | subagent | `deepseek/deepseek-v4-flash` | 低风险、可逆、实现方式已完全确定的变更（步骤明确或模式显而易见，不限文件数量）。 |
 | `medium-fixer` | subagent | `openai/gpt-5.6-terra` | 有界的多文件实现、标准重构和测试更新。 |
 | `deep-fixer` | subagent | `openai/gpt-5.6-sol` | 对已批准架构进行复杂、高风险的实现，并提供 Rollback Plan。 |
 
@@ -123,13 +123,15 @@ User <-> Orchestrator / K3 (max)
 
 ## 路由循环
 
-1. Orchestrator 解读用户请求并选择 Specialist 路径。
+1. Orchestrator 解读用户请求，确定 Specialist 的授权边界。
 2. 它向 Dispatcher 下达一个节点指令，明确目标、范围、节点是否只读或允许变更、确切的 Specialist 或有界的授权集合、约束、验收标准和返回条件。
 3. Dispatcher 通过调用或恢复已授权的 Specialists、收集证据，并在适当情况下重试或回退来执行节点；它在检查点或边界处返回。
 4. Orchestrator 决定是继续、重试、切换 Specialist、恢复同一个 Dispatcher 会话、咨询 Oracle、询问用户还是停止。
 5. 当 Orchestrator 向用户报告最终结果时，循环结束。
 
 Dispatcher 会在获授权的节点内自主推进，不会仅因一次 Specialist 调用完成就返回。节点完成或到达 Orchestrator 边界时，它必须返回。一个根任务复用一个 Dispatcher 会话（`task_id`）。
+
+在 mutation 节点中，Fixer tier 由 Dispatcher 按任务特征战术选择：默认 `low-fixer` 优先，适合低风险、可逆、实现方式已完全确定的变更（步骤明确或模式显而易见，不限文件数量）；`low-fixer` 因能力不足返回时，Dispatcher 可在节点内携带上下文把同一任务升级给 `medium-fixer`，无需返回 Orchestrator；`medium-fixer` 仍无法完成时，Dispatcher 必须返回 Orchestrator，不得自行升级 `deep-fixer`——`deep-fixer` 仅在 Orchestrator 明确授权时使用，保留给核心代码与无明确头绪的艰难任务。Orchestrator 仍可指定确切 Fixer（如核心/高风险任务指定 `deep-fixer`，步骤已锁定的机械任务指定 `low-fixer`），指定后 Dispatcher 不得替换。
 
 ### 必须返回的边界
 
@@ -155,7 +157,8 @@ Dispatcher 会在获授权的节点内自主推进，不会仅因一次 Speciali
 | mode | primary | subagent | subagent | subagent | subagent |
 | edit | deny | deny | deny | deny | allow |
 | bash | deny | allow (never to modify source files) | deny | allow (read-only by rule) | allow |
-| read/grep/glob/list/lsp | allow | allow | allow | allow | allow |
+| read/lsp | allow | allow | allow | allow | allow |
+| grep/glob/list/webfetch/websearch | deny | allow | allow | allow | allow |
 | external_directory | ask | ask | ask | ask | ask |
 | task -> dispatcher | allow | deny | deny | deny | deny |
 | task -> oracle | allow | deny | deny | deny | deny |
@@ -272,7 +275,7 @@ task="deny"
 
 | Agent | 默认 permission |
 | --- | --- |
-| `orchestrator` | `edit: deny`, `bash: deny`, `external_directory: ask`, `read: allow`, `question: allow`, `todowrite: allow`, `interrupt_session: allow`, `task.*: deny`, `task.dispatcher: allow`, `task.oracle: allow` |
+| `orchestrator` | `edit: deny`, `bash: deny`, `external_directory: ask`, `read: allow`, `question: allow`, `todowrite: allow`, `grep: deny`, `glob: deny`, `list: deny`, `webfetch: deny`, `websearch: deny`, `interrupt_session: allow`, `task.*: deny`, `task.dispatcher: allow`, `task.oracle: allow` |
 | `dispatcher` | `edit: deny`, `bash: allow`, `todowrite: allow`, `read: allow`, `webfetch: allow`, `doom_loop: allow`, `external_directory: ask`, `interrupt_session: deny`, `task.*: deny`, `task.explorer/low-fixer/medium-fixer/deep-fixer: allow` |
 | `explorer` | `edit: deny`, `bash: allow`, `external_directory: allow`, `task: deny`, `glob: allow`, `grep: allow`, `list: allow`, `webfetch: allow`, `websearch: allow`, `read: allow`, `interrupt_session: deny` |
 | `low-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny`, `interrupt_session: deny` |
