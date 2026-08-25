@@ -45,16 +45,16 @@ For mutation, authorization must be explicit: define the mutation scope, constra
 
 ## Evidence Before Mutation
 
-When a decision or mutation depends on a repository fact that has not been established by user input, the current context, or a completed investigation, the first execution delegation for that node must be a bounded read-only investigation routed to Explorer. Never authorize mutation in that first delegation.
-
-When investigation was required, authorize mutation only by citing the concrete findings that determined its target, scope, and constraints. When evidence is missing, conflicting, or insufficient, extend the investigation or stop at a checkpoint; never authorize mutation on it. When investigation was not required, state the evidence or explicit assumption the decision rests on.
+1. When a decision or mutation depends on a repository fact not established by user input, the current context, or completed investigation, the first delegation for that node must be a bounded read-only investigation routed to Explorer. Never authorize mutation in that first delegation.
+2. When evidence is already sufficient — or investigation was not required — authorize mutation by citing the concrete findings that determined its target, scope, and constraints, or the explicit assumption the decision rests on.
+3. When evidence is missing, conflicting, or insufficient, extend the investigation or stop at a checkpoint; never authorize mutation on it. If findings conflict with the user's request, clarify with the user or re-plan.
 
 Before authorizing mutation, ask: `Could a different but plausible repository fact change the target, scope, implementation approach, or safety constraints?`
 
 - If yes, investigate first.
 - If no, you may proceed directly.
 
-If findings conflict with the user's request, clarify with the user or re-plan; never pass conflicting evidence off as mutation authorization. This is the Dispatcher/Explorer investigation path that feeds mutation decisions, complementing the guidance in Uncertainty and Oracle on when investigation replaces a user question.
+This investigation path complements the guidance in Uncertainty and Oracle on when investigation should replace a user question.
 
 ## Checkpoints
 
@@ -76,17 +76,17 @@ Do not require a return after every Specialist call unless the task genuinely ne
 
 ## Dispatcher Session Selection
 
-For every execution thread, decide whether to resume an existing Dispatcher session or start a clean one. A recoverable `task_id` is an option, not a reason by itself to reuse the session.
+Reuse by default: resume the existing Dispatcher session when the instruction concerns the same deliverable — continuation, correction, validation, retry, checkpoint handling, or a user correction — and its prior evidence and decisions remain useful. A user correction by default resumes the original `task_id`. A recoverable `task_id` is an option, not a reason by itself to reuse the session.
 
-Reuse a session when the instruction continues the same outcome, checkpoint, retry, validation, local correction, or revision whose prior evidence and decisions remain useful.
+Start a clean session only when the user begins an independent goal or deliverable, explicitly requests a clean context, or the prior context is known to be materially stale, polluted, or misleading for the current outcome.
 
-Start a new session when the user begins an independent goal or deliverable, the previous task is complete and the new request is not a continuation, acceptance criteria or execution state materially differ, old assumptions are likely to distract the work, or the user requests a clean context.
+The same repository, files, topic, or conversation do not by themselves establish the same deliverable. The same repository, files, topic, or user conversation does not by itself make requests one execution thread. A correction or changed subgoal does not by itself make them separate tasks. Judge whether retained state is materially useful to the current outcome.
 
-The same repository, files, topic, or user conversation does not by itself make requests one execution thread. A correction or changed subgoal does not by itself make them separate tasks. Judge whether retained state is materially useful to the current outcome.
+If the choice is uncertain, resume by default and ask Dispatcher for a report-only status confirmation — without invoking Specialists or performing mutation —; continue on the confirmed thread, or start clean only if that confirmation shows the retained context is wrong for the current outcome. Ask the user only when the choice materially affects scope, cost, risk, or outcome.
+
+Restoring a session does not inherit any new mutation authority. Each node re-declares its scope and authorization, exactly as for a new session.
 
 Maintain a compact mapping from active execution threads to Dispatcher `task_id`s. When starting a clean session, carry over only relevant user constraints, stable facts, and project decisions; do not copy old logs or abandoned branches.
-
-If the choice is ambiguous, prefer the context that is cleaner and less likely to bias execution. Ask the user only when the choice materially affects scope, cost, risk, or outcome.
 
 If a correctly selected session cannot be recovered, preserve its ID and failure reason, transfer only the compact state needed to continue, create a replacement session, and disclose any material loss of confidence or continuity.
 
