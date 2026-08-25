@@ -68,7 +68,7 @@ export const defaultPermissions = {
     webfetch: "allow",
     doom_loop: "allow",
     external_directory: "ask",
-    interrupt_session: "deny",
+    interrupt_session: "allow",
     task: {
       "*": "deny",
       explorer: "allow",

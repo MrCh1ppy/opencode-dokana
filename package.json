@@ -6,6 +6,7 @@
   "main": "./index.ts",
   "files": [
     "*.ts",
+    "opencode-dokana.default.toml",
     "prompts/",
     "skills/"
   ],

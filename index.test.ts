@@ -63,10 +63,36 @@ test("the config hook replaces existing permission while preserving other agent 
       webfetch: "allow",
       doom_loop: "allow",
       external_directory: "ask",
-      interrupt_session: "deny",
+      interrupt_session: "allow",
       task: { "*": "ask", explorer: "allow", "low-fixer": "allow", "medium-fixer": "allow", "deep-fixer": "allow", oracle: "allow" },
       custom_permission: "not-an-opencode-enum",
     })
+  } finally {
+    process.env.HOME = previousHome
+    await rm(home, { recursive: true, force: true })
+  }
+})
+
+test("the config hook loads the repository default TOML when the user TOML is absent", async () => {
+  const home = await mkdtemp(join(tmpdir(), "opencode-dokana-default-test-"))
+  const previousHome = process.env.HOME
+  try {
+    process.env.HOME = home
+    const input = {
+      directory: home,
+      serverUrl: new URL("http://127.0.0.1:4096"),
+      client: {
+        app: { log: async () => undefined },
+        tui: { showToast: async () => undefined },
+      },
+    } as unknown as PluginInput
+    const hooks = await dokanaPlugin(input)
+    const cfg = { agent: {} } as unknown as Config
+
+    await hooks.config?.(cfg)
+
+    expect(cfg.agent?.dispatcher?.model).toBe("openai/gpt-5.6-luna")
+    expect(cfg.agent?.dispatcher?.variant).toBe("max")
   } finally {
     process.env.HOME = previousHome
     await rm(home, { recursive: true, force: true })

@@ -157,14 +157,18 @@ In mutation nodes, Dispatcher selects the Fixer tier tactically by the demands o
 | mode | primary | subagent | subagent | subagent | subagent |
 | edit | deny | deny | deny | deny | allow |
 | bash | deny | allow (never to modify source files) | deny | allow (read-only by rule) | allow |
-| read/lsp | allow | allow | allow | allow | allow |
-| grep/glob/list/webfetch/websearch | deny | allow | allow | allow | allow |
-| external_directory | ask | ask | ask | ask | ask |
+| read | allow | allow | allow | allow | 未设置 |
+| lsp | deny | 未设置 | allow | 未设置 | 未设置 |
+| grep/glob/list | deny | 未设置 | allow | allow | 未设置 |
+| webfetch | deny | allow | 未设置 | allow | 未设置 |
+| websearch | deny | 未设置 | 未设置 | allow | 未设置 |
+| doom_loop | 未设置 | allow | 未设置 | 未设置 | 未设置 |
+| external_directory | ask | ask | ask | allow | allow |
 | task -> dispatcher | allow | deny | deny | deny | deny |
 | task -> oracle | allow | deny | deny | deny | deny |
 | task -> explorer | deny | allow | deny | deny | deny |
 | task -> fixers | deny | allow | deny | deny | deny |
-| interrupt_session | allow | deny | deny | deny | deny |
+| interrupt_session | allow | allow | deny | deny | deny |
 
 Fixers 是唯一可以修改源文件的代理。尽管 Dispatcher 和 Explorer 具有 `bash: allow`，但它们的提示词规则将 Bash 限制为只读或验证用途。它们绝不能使用 Bash 绕过 `edit: deny` 来修改源文件。
 
@@ -172,7 +176,7 @@ Fixers 是唯一可以修改源文件的代理。尽管 Dispatcher 和 Explorer 
 
 插件提供 `interrupt_session` 自定义工具，用于请求取消当前 session 的子孙任务。签名为 `interrupt_session({ task_id: string, reason?: string })`，其中 `task_id` 必填且不能为空；目标不能是当前 session，必须沿目标 session 的 `parentID` 链最终直接连接到当前 session。工具先完成基本 `task_id` 校验，再经过 `interrupt_session` 权限询问，metadata 会包含当前 `sessionID`、目标 `task_id` 以及存在时的 `reason`。
 
-默认权限为 `orchestrator: allow`，`dispatcher`、`explorer`、`low-fixer`、`medium-fixer`、`deep-fixer` 与 `oracle` 均为 `deny`。TOML 可将该 permission 覆盖为 `allow`、`ask` 或 `deny`。
+默认权限为 `orchestrator: allow`、`dispatcher: allow`，`explorer`、`low-fixer`、`medium-fixer`、`deep-fixer` 与 `oracle` 均为 `deny`。TOML 可将该 permission 覆盖为 `allow`、`ask` 或 `deny`。
 
 工具使用 v1 `client.session.get({ path: { id } })` 验证 parent 链，目标合法后严格调用 `client.session.abort({ path: { id: task_id } })`。该 abort 作用于目标 `BackgroundJob`，遵循递归取消语义；abort 异步生效，返回成功只表示已向目标发送 cancellation request，不等于已确认停止。错误、缺少 data 或 `false` 都会报告为失败，不会伪装成成功。TUI 的 Esc 中断路径独立，未被此插件改动。若设置 `OPENCODE_SERVER_PASSWORD`，插件会使用 `OPENCODE_SERVER_USERNAME`（默认 `opencode`）发送 HTTP Basic `Authorization`；未设置密码时不会发送该 header。
 
@@ -204,7 +208,7 @@ Orchestrator 调用 Dispatcher 必须无条件使用 `task` 工具的 `backgroun
 
 ## 配置
 
-插件在启动时读取 `~/.config/opencode/opencode-dokana.toml`。完整示例：
+插件在启动时优先读取用户的 `~/.config/opencode/opencode-dokana.toml`；该文件不存在时加载仓库内的 `opencode-dokana.default.toml`。两者不会逐键合并。完整示例：
 
 ```toml
 [agents.orchestrator]
@@ -239,7 +243,7 @@ variant="medium"
 edit="deny"
 bash="allow"
 external_directory="ask"
-interrupt_session="ask"
+interrupt_session="allow"
 
 [agents.dispatcher.permission.task]
 "*"="deny"
@@ -275,8 +279,8 @@ task="deny"
 
 | Agent | 默认 permission |
 | --- | --- |
-| `orchestrator` | `edit: deny`, `bash: deny`, `external_directory: ask`, `read: allow`, `question: allow`, `todowrite: allow`, `grep: deny`, `glob: deny`, `list: deny`, `webfetch: deny`, `websearch: deny`, `interrupt_session: allow`, `task.*: deny`, `task.dispatcher: allow`, `task.oracle: allow` |
-| `dispatcher` | `edit: deny`, `bash: allow`, `todowrite: allow`, `read: allow`, `webfetch: allow`, `doom_loop: allow`, `external_directory: ask`, `interrupt_session: deny`, `task.*: deny`, `task.explorer/low-fixer/medium-fixer/deep-fixer: allow` |
+| `orchestrator` | `edit: deny`, `bash: deny`, `external_directory: ask`, `read: allow`, `question: allow`, `todowrite: allow`, `grep: deny`, `glob: deny`, `list: deny`, `webfetch: deny`, `websearch: deny`, `lsp: deny`, `interrupt_session: allow`, `task.*: deny`, `task.dispatcher: allow`, `task.oracle: allow` |
+| `dispatcher` | `edit: deny`, `bash: allow`, `todowrite: allow`, `read: allow`, `webfetch: allow`, `doom_loop: allow`, `external_directory: ask`, `interrupt_session: allow`, `task.*: deny`, `task.explorer/low-fixer/medium-fixer/deep-fixer: allow` |
 | `explorer` | `edit: deny`, `bash: allow`, `external_directory: allow`, `task: deny`, `glob: allow`, `grep: allow`, `list: allow`, `webfetch: allow`, `websearch: allow`, `read: allow`, `interrupt_session: deny` |
 | `low-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny`, `interrupt_session: deny` |
 | `medium-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny`, `interrupt_session: deny` |
@@ -287,7 +291,7 @@ prompt 路径必须为 `.md` 文件，相对 TOML 所在目录解析，支持 `~
 
 错误回退：
 
-- TOML 缺失或解析失败时，model/variant/prompt 不应用 TOML 覆盖，仍使用各自默认；插件默认 permission 矩阵仍然应用。
+- 用户 TOML 不存在时加载仓库默认 TOML；所选 TOML 缺失或解析失败时，model/variant/prompt 不应用 TOML 覆盖，仍使用各自默认；插件默认 permission 矩阵仍然应用。
 - 单个 agent 的 `model`/`variant` 非法时，该 agent 的这两个字段原子回退到 frontmatter 默认。
 - `prompt` 路径非法或不可读时，回退到插件内置默认 `prompts/<agent>.md`。
 

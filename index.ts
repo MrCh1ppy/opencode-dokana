@@ -12,6 +12,10 @@ function getTomlPath(): string {
   return `${process.env.HOME ?? Bun.env.HOME ?? ""}/.config/opencode/opencode-dokana.toml`
 }
 
+function getDefaultTomlPath(): string {
+  return resolve(import.meta.dir, "opencode-dokana.default.toml")
+}
+
 async function readToml(tomlPath: string): Promise<{ ok: true; text: string } | { ok: false; message: string }> {
   try {
     return { ok: true, text: await Bun.file(tomlPath).text() }
@@ -31,7 +35,8 @@ export default async function dokanaPlugin(input: PluginInput): Promise<Hooks> {
       cfg.skills.paths = cfg.skills.paths ?? []
       if (!cfg.skills.paths.includes(skillsDir)) cfg.skills.paths.push(skillsDir)
 
-      const tomlPath = getTomlPath()
+      const userTomlPath = getTomlPath()
+      const tomlPath = await Bun.file(userTomlPath).exists() ? userTomlPath : getDefaultTomlPath()
       const loaded = await readToml(tomlPath)
       const validation = !loaded.ok
         ? invalidFile(`TOML unavailable: ${loaded.message}`)
