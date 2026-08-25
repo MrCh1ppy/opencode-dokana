@@ -51,6 +51,7 @@ export const defaultPermissions = {
     list: "deny",
     webfetch: "deny",
     websearch: "deny",
+    lsp: "deny",
     interrupt_session: "allow",
     task: {
       "*": "deny",
