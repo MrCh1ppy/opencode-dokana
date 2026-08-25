@@ -1,4 +1,5 @@
 import type { Hooks, PluginInput } from "@opencode-ai/plugin"
+import { resolve } from "node:path"
 import { applyPlan } from "./apply"
 import { createInterruptSessionTool } from "./interrupt-session"
 import { notify } from "./notify"
@@ -25,6 +26,11 @@ export default async function dokanaPlugin(input: PluginInput): Promise<Hooks> {
       interrupt_session: createInterruptSessionTool(input),
     },
     config: async (cfg) => {
+      const skillsDir = resolve(import.meta.dir, "skills")
+      cfg.skills = cfg.skills ?? {}
+      cfg.skills.paths = cfg.skills.paths ?? []
+      if (!cfg.skills.paths.includes(skillsDir)) cfg.skills.paths.push(skillsDir)
+
       const tomlPath = getTomlPath()
       const loaded = await readToml(tomlPath)
       const validation = !loaded.ok

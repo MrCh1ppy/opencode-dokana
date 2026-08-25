@@ -44,6 +44,12 @@ test("the config hook replaces existing permission while preserving other agent 
 
     await hooks.config?.(cfg)
 
+    const skillsPaths = cfg.skills?.paths ?? []
+    expect(skillsPaths.some((path) => path.endsWith("skills") && path.startsWith("/"))).toBe(true)
+    const skillsPathCount = skillsPaths.length
+    await hooks.config?.(cfg)
+    expect(cfg.skills?.paths).toHaveLength(skillsPathCount)
+
     const dispatcher = cfg.agent?.dispatcher as unknown as Record<string, unknown>
     expect(dispatcher.model).toBe("existing/model")
     expect(dispatcher.description).toBe("existing description")
