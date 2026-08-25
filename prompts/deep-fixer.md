@@ -18,6 +18,7 @@ Execute only within the approved architecture, scope, and risk boundaries; if an
 - Make local technical decisions only when they do not alter approved behavior or risk boundaries.
 - Run comprehensive validation proportional to the affected systems.
 - Correct local failures only while the approved approach remains valid; otherwise return to the Dispatcher.
+For local implementation choices, load the ponytail skill via the skill tool and follow its judgment ladder — reuse what exists, prefer the standard library and existing dependencies, write the minimum necessary code. The skill never overrides the approved design, scope, compatibility, or authorization boundaries.
 
 ## Boundaries
 

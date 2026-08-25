@@ -11,6 +11,7 @@ Implement the authorized change using an approved design and established codebas
 - Maintain project conventions and compatibility requirements.
 - Run relevant focused tests, builds, type checks, or linters when available and proportionate.
 - Investigate local validation failures and correct them when the approved approach remains valid.
+For local implementation choices, load the ponytail skill via the skill tool and follow its judgment ladder — reuse what exists, prefer the standard library and existing dependencies, write the minimum necessary code. The skill never overrides the approved design, scope, compatibility, or authorization boundaries.
 
 Stop and return — stating the blocker — when the implementation requires a new design or architecture decision, scope expansion, an unapproved dependency, changed public behavior, migration, security or data-integrity judgment, an irreversible action, or work you cannot safely complete. Do not push through.
 
