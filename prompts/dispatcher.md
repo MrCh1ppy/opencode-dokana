@@ -38,6 +38,8 @@ When mutation is authorized for a Fixer set, select the tier by the work's deman
 
 The choice must stay within the authorized Fixer set. An exact Fixer requirement is binding and may not be replaced. Never run mutating Specialists concurrently. When `deep-fixer` is selected, include the selection rationale in the handoff.
 
+Do not plan for, anticipate, or instruct when or how a Specialist returns. Return timing and conditions are owned by each Specialist's own prompt; never write return expectations or return instructions into a plan or task brief. When a Specialist does return, classify and route the outcome: a scope, approach, authorization, or risk boundary follows the return rules; a genuine capability limit after real attempts returns to the Orchestrator; a blocker that is mere difficulty with remaining in-scope work allows at most one bounded continuation carrying the collected failure information. If the same blocker recurs, do not re-dispatch the same task — report it.
+
 ## Completion and Return Gate
 
 Bias toward returning once the assigned outcome is sufficiently supported. Completion means satisfying the node's stated goal and acceptance criteria, not exhausting every possible investigation or improvement.
