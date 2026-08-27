@@ -101,7 +101,7 @@ User <-> Orchestrator / K3 (high)
 - **Orchestrator** 是唯一的 primary agent，也是唯一直接与用户沟通的代理。它为 Dispatcher 定义有界执行节点，授权 Specialists，评估结果并报告最终结果。
 - **Dispatcher** 是有界的应用层协调器。在获得授权的节点内，它可以组织多次 Specialist 调用、恢复已有的 Specialist 会话、收集证据、执行获授权的检查、重试可逆操作、跟进有前景的分支，以及从无成果的分支回退。只有在节点完成或继续执行将越过 Orchestrator 边界时，它才会返回。它绝不与用户沟通，也不修改源文件。Orchestrator 可以指定必须使用的确切 Specialist，此时 Dispatcher 必须使用该 Specialist，不得替换；也可以授权一个有界 Specialist 集合，由 Dispatcher 在其中进行战术选择。
 - **Oracle** 仅由 Orchestrator 调用，用于提供困难架构问题和根因分析方面的建议。
-- **Explorer 和三个 Fixers** 是由 Dispatcher 调用的 Specialists。通常的升级路径是 `Specialist -> Dispatcher -> Orchestrator`；唯一的例外是 Fixer tier 的节点内升级：`low-fixer` 因能力不足返回时，Dispatcher 可在授权集合内直接把同一任务升级给 `medium-fixer`，无需返回 Orchestrator。
+- **Explorer 和三个 Fixers** 是由 Dispatcher 调用的 Specialists。通常的升级路径是 `Specialist -> Dispatcher -> Orchestrator`；唯一的例外是 Fixer tier 的节点内升级：`low-fixer` 因能力不足返回时，Dispatcher 可基于战术判断将同一任务交给 `medium-fixer`，无需返回 Orchestrator。若 `medium-fixer` 仍无法完成，Dispatcher 必须返回 Orchestrator；Dispatcher 不得自行选择 `deep-fixer`。
 
 `subagent_depth: 2` 允许调用链 `Orchestrator -> Dispatcher -> Specialist`，且不会更深。Dispatcher 可以在一个节点内多次调用或恢复已授权的 Specialists。只有在任务确实需要逐步控制时，Orchestrator 才会要求每次调用后都返回。
 
@@ -113,8 +113,8 @@ User <-> Orchestrator / K3 (high)
 | `dispatcher` | subagent | `openai/gpt-5.6-terra` | 执行获授权的节点：调用或恢复已授权的 Specialists，压缩结果，并在检查点返回。`edit: deny`、`bash: allow`（绝不用于修改源文件）。 |
 | `oracle` | subagent | `openai/gpt-5.6-sol` | 为不明确的架构、根因、安全性、兼容性或不可逆权衡提供高级建议。只读。 |
 | `explorer` | subagent | `deepseek/deepseek-v4-flash` | 只读代码库侦察和证据收集。 |
-| `low-fixer` | subagent | `deepseek/deepseek-v4-flash` | Mechanical changes with explicit steps or an obvious pattern. |
-| `medium-fixer` | subagent | `openai/gpt-5.6-terra` | Implementations requiring non-trivial reasoning. |
+| `low-fixer` | subagent | `deepseek/deepseek-v4-flash` | Default execution tier for bounded non-trivial tasks whose main path is known and permits necessary local implementation judgment and bounded initial reasoning. |
+| `medium-fixer` | subagent | `openai/gpt-5.6-terra` | A tactical alternative to `low-fixer`, selected by Dispatcher when the task's difficulty or recovery needs make it the better fit. |
 | `deep-fixer` | subagent | `openai/gpt-5.6-sol` | Explicitly authorized complex or high-risk work. |
 
 以上为参考配置，实际 `model`/`variant` 由 `opencode-dokana.toml` 决定，可通过会话内 `ctrl+t` 临时覆盖。
@@ -129,7 +129,7 @@ User <-> Orchestrator / K3 (high)
 
 Dispatcher advances autonomously within an authorized node and does not return merely because one Specialist call completed. It must return when the node is complete or an Orchestrator boundary is reached. Continuation, correction, validation, and retry work for the same deliverable reuses the original Dispatcher session (`task_id`) by default; create a new session only for an independent objective, when the user explicitly requests a clean context, or when the old context is confirmed stale or contaminated.
 
-In mutation nodes, Dispatcher selects the Fixer tier tactically by the demands of the work: `low-fixer` is the default; if it fails, escalate in-node to `medium-fixer` on the same task; if `medium-fixer` fails, return to the Orchestrator; use `deep-fixer` only when explicitly authorized. An exact Fixer requirement from the Orchestrator is binding and may not be replaced.
+In mutation nodes, `low-fixer` is the default execution tier, while Dispatcher selects tactically between `low-fixer` and `medium-fixer` based on the demands of the work. If `low-fixer` returns because it cannot safely complete the task, Dispatcher may continue the same task with `medium-fixer`; if `medium-fixer` fails, Dispatcher must return to the Orchestrator. Dispatcher may use `deep-fixer` only when it is explicitly authorized. An exact Fixer requirement from the Orchestrator is binding and may not be replaced.
 
 ### 必须返回的边界
 
