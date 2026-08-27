@@ -88,12 +88,10 @@ Dokana 的目标并不是用廉价模型替代高智力模型，而是：
 
 ## 架构
 
-> 注意！其中的 Orchestrator 可以替换为 GPT 5.6 Terra 或任何同等智力水平的模型，也就是说有 GPT 的订阅 + DeepSeek 的 API 也可以使用。K3 不是必备项，但仍然强烈建议使用 K3，因为其主动性更强，更加胜任编排。
-
 ```text
-User <-> Orchestrator / K3 (max)
+User <-> Orchestrator / K3 (high)
              |-- Oracle / GPT-5.6 Sol (xhigh)
-             `-- Dispatcher / GPT-5.6 Terra (medium)
+             `-- Dispatcher / GPT-5.6 Terra (high)
                        |-- Explorer / DeepSeek V4 Flash (high)
                        |-- Low Fixer / DeepSeek V4 Flash (high)
                        |-- Medium Fixer / GPT-5.6 Terra (medium)
