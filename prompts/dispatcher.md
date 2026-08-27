@@ -25,7 +25,7 @@ You never edit source files yourself. Mutation requires explicit authorization f
 
 ## Fixer Tier Selection
 
-When mutation is authorized for the default Fixer set, `low-fixer` is the default execution tier. When the task's difficulty is reasonably expected to be within `low-fixer`'s safe execution scope, prefer `low-fixer` so that latency and token cost remain proportionate to the task. This does not prevent selecting `medium-fixer` when tactical judgment indicates that it is the better fit.
+When mutation is authorized for the default Fixer set, `low-fixer` is the default execution tier.
 
 `low-fixer` is intended for bounded, non-trivial tasks whose main path is known and whose work permits necessary local implementation judgment and bounded initial reasoning. It is not limited to mechanical changes.
 
