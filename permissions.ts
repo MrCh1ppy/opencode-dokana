@@ -11,6 +11,7 @@ export const PERMISSION_KEYS = {
   question: "question",
   todowrite: "todowrite",
   task: "task",
+  skill: "skill",
   webfetch: "webfetch",
   doomLoop: "doom_loop",
   glob: "glob",
@@ -28,14 +29,16 @@ export const TASK_KEYS = {
 type DefaultPermissionKey = (typeof PERMISSION_KEYS)[keyof typeof PERMISSION_KEYS]
 type DefaultTaskKey = (typeof TASK_KEYS)[keyof typeof TASK_KEYS] | AgentId
 type DefaultTask = Readonly<Partial<Record<DefaultTaskKey, Action>>>
-type DefaultPermissionValue = Action | DefaultTask
+export type DefaultSkill = Readonly<Record<string, Action>>
+type DefaultTaskValue = Action | DefaultTask
+type DefaultPermissionValue = Action | DefaultTask | DefaultSkill
 
 export type PermissionValue = DefaultPermissionValue
 export type PermissionObject = Readonly<Record<string, unknown>>
 export type PermissionOverride = Readonly<Record<string, unknown>>
 
-export type DefaultPermission = Readonly<Partial<Record<Exclude<DefaultPermissionKey, typeof PERMISSION_KEYS.task>, Action>>> &
-  Readonly<{ [PERMISSION_KEYS.task]?: DefaultPermissionValue }>
+export type DefaultPermission = Readonly<Partial<Record<Exclude<DefaultPermissionKey, typeof PERMISSION_KEYS.task | typeof PERMISSION_KEYS.skill>, Action>>> &
+  Readonly<{ [PERMISSION_KEYS.task]?: DefaultTaskValue; [PERMISSION_KEYS.skill]?: DefaultSkill }>
 
 export const defaultPermissions = {
   // Primary user-facing planner: no direct mutation or shell access.
@@ -45,7 +48,7 @@ export const defaultPermissions = {
     external_directory: "ask",
     read: "allow",
     question: "allow",
-    todowrite: "allow",
+    todowrite: "deny",
     grep: "deny",
     glob: "deny",
     list: "deny",
@@ -57,6 +60,10 @@ export const defaultPermissions = {
       "*": "deny",
       dispatcher: "allow",
       oracle: "allow",
+    },
+    skill: {
+      "*": "deny",
+      "customize-opencode": "allow",
     },
   },
   // Bounded coordinator: can run checks and route only to approved specialists.
@@ -76,6 +83,10 @@ export const defaultPermissions = {
       "medium-fixer": "allow",
       "deep-fixer": "allow",
     },
+    skill: {
+      "*": "deny",
+      "customize-opencode": "allow",
+    },
   },
   // Read-only repository scout.
   explorer: {
@@ -90,6 +101,10 @@ export const defaultPermissions = {
     websearch: "allow",
     read: "allow",
     interrupt_session: "deny",
+    skill: {
+      "*": "deny",
+      "customize-opencode": "allow",
+    },
   },
   // Low-risk reversible implementer.
   "low-fixer": {
@@ -98,6 +113,11 @@ export const defaultPermissions = {
     external_directory: "allow",
     task: "deny",
     interrupt_session: "deny",
+    skill: {
+      "*": "deny",
+      "customize-opencode": "allow",
+      ponytail: "allow",
+    },
   },
   // Standard multi-file implementer.
   "medium-fixer": {
@@ -106,6 +126,11 @@ export const defaultPermissions = {
     external_directory: "allow",
     task: "deny",
     interrupt_session: "deny",
+    skill: {
+      "*": "deny",
+      "customize-opencode": "allow",
+      ponytail: "allow",
+    },
   },
   // High-risk implementer for approved complex changes.
   "deep-fixer": {
@@ -114,6 +139,11 @@ export const defaultPermissions = {
     external_directory: "allow",
     task: "deny",
     interrupt_session: "deny",
+    skill: {
+      "*": "deny",
+      "customize-opencode": "allow",
+      ponytail: "allow",
+    },
   },
   // Read-only architecture and root-cause advisor.
   oracle: {
@@ -127,6 +157,10 @@ export const defaultPermissions = {
     external_directory: "ask",
     task: "deny",
     interrupt_session: "deny",
+    skill: {
+      "*": "deny",
+      "customize-opencode": "allow",
+    },
   },
 } as const satisfies Readonly<Record<AgentId, DefaultPermission>>
 
@@ -135,10 +169,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function clonePermissionValue(value: PermissionValue): PermissionValue {
-  return isRecord(value) ? { ...value } as DefaultTask : value
+  return isRecord(value) ? { ...value } as DefaultTask | DefaultSkill : value
 }
 
-function mergeTask(defaultTask: PermissionValue | undefined, overrideTask: unknown): unknown {
+function mergeTask(defaultTask: DefaultTaskValue | undefined, overrideTask: unknown): unknown {
   if (!isRecord(overrideTask)) return overrideTask
   const defaults = isRecord(defaultTask) ? defaultTask : {}
   const merged: Record<string, unknown> = {}

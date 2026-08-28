@@ -15,15 +15,18 @@ void ({ task: { "unknown-agent": "allow" } } satisfies DefaultPermission)
 // @ts-expect-error Default permission actions must be valid actions.
 void ({ edit: "unexpected-action" } satisfies DefaultPermission)
 
+// @ts-expect-error Default skill actions must be valid actions.
+void ({ skill: { "example-skill": "unexpected-action" } } satisfies DefaultPermission)
+
 test("the seven default permission matrices match the approved snapshot", () => {
   expect(defaultPermissions).toEqual({
-    orchestrator: { edit: "deny", bash: "deny", external_directory: "ask", read: "allow", question: "allow", todowrite: "allow", grep: "deny", glob: "deny", list: "deny", webfetch: "deny", websearch: "deny", lsp: "deny", interrupt_session: "allow", task: { "*": "deny", dispatcher: "allow", oracle: "allow" } },
-    dispatcher: { edit: "deny", bash: "allow", todowrite: "allow", read: "allow", webfetch: "allow", doom_loop: "allow", external_directory: "ask", interrupt_session: "allow", task: { "*": "deny", explorer: "allow", "low-fixer": "allow", "medium-fixer": "allow", "deep-fixer": "allow" } },
-    explorer: { edit: "deny", bash: "allow", external_directory: "allow", task: "deny", glob: "allow", grep: "allow", list: "allow", webfetch: "allow", websearch: "allow", read: "allow", interrupt_session: "deny" },
-    "low-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny" },
-    "medium-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny" },
-    "deep-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny" },
-    oracle: { edit: "deny", bash: "deny", read: "allow", grep: "allow", glob: "allow", list: "allow", lsp: "allow", external_directory: "ask", task: "deny", interrupt_session: "deny" },
+    orchestrator: { edit: "deny", bash: "deny", external_directory: "ask", read: "allow", question: "allow", todowrite: "deny", grep: "deny", glob: "deny", list: "deny", webfetch: "deny", websearch: "deny", lsp: "deny", interrupt_session: "allow", task: { "*": "deny", dispatcher: "allow", oracle: "allow" }, skill: { "*": "deny", "customize-opencode": "allow" } },
+    dispatcher: { edit: "deny", bash: "allow", todowrite: "allow", read: "allow", webfetch: "allow", doom_loop: "allow", external_directory: "ask", interrupt_session: "allow", task: { "*": "deny", explorer: "allow", "low-fixer": "allow", "medium-fixer": "allow", "deep-fixer": "allow" }, skill: { "*": "deny", "customize-opencode": "allow" } },
+    explorer: { edit: "deny", bash: "allow", external_directory: "allow", task: "deny", glob: "allow", grep: "allow", list: "allow", webfetch: "allow", websearch: "allow", read: "allow", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow" } },
+    "low-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow", ponytail: "allow" } },
+    "medium-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow", ponytail: "allow" } },
+    "deep-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow", ponytail: "allow" } },
+    oracle: { edit: "deny", bash: "deny", read: "allow", grep: "allow", glob: "allow", list: "allow", lsp: "allow", external_directory: "ask", task: "deny", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow" } },
   })
 })
 
@@ -92,6 +95,25 @@ test("task tables merge by key with wildcard first", () => {
 
 test("a scalar task override replaces the complete task table", () => {
   expect(effectivePermission("dispatcher", { task: "deny" }).task).toBe("deny")
+})
+
+test("skill tables use ordered defaults and TOML overrides replace them completely", () => {
+  for (const id of Object.keys(defaultPermissions) as Array<keyof typeof defaultPermissions>) {
+    const skill = defaultPermissions[id].skill
+    expect(Object.keys(skill)).toEqual(id.endsWith("fixer")
+      ? ["*", "customize-opencode", "ponytail"]
+      : ["*", "customize-opencode"])
+    expect(effectivePermission(id).skill).toEqual(skill)
+  }
+
+  const skill = { "*": "deny", "custom-skill": "allow" } as const
+  expect(effectivePermission("low-fixer", { skill }).skill).toEqual(skill)
+  expect(Object.keys(effectivePermission("low-fixer", { skill }).skill as object)).toEqual(["*", "custom-skill"])
+})
+
+test("orchestrator and dispatcher retain their distinct todowrite defaults", () => {
+  expect(effectivePermission("orchestrator").todowrite).toBe("deny")
+  expect(effectivePermission("dispatcher").todowrite).toBe("allow")
 })
 
 test("effective permission creation never mutates default constants", () => {

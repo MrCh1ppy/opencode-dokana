@@ -89,9 +89,9 @@ Dokana 的目标并不是用廉价模型替代高智力模型，而是：
 ## 架构
 
 ```text
-User <-> Orchestrator / K3 (high)
-             |-- Oracle / GPT-5.6 Sol (xhigh)
-             `-- Dispatcher / GPT-5.6 Terra (high)
+User <-> Orchestrator / GPT-5.6 Sol (high)
+              |-- Oracle / GPT-5.6 Sol (xhigh)
+              `-- Dispatcher / K3 (high)
                        |-- Explorer / DeepSeek V4 Flash (high)
                        |-- Low Fixer / DeepSeek V4 Flash (high)
                        |-- Medium Fixer / GPT-5.6 Terra (medium)
@@ -109,13 +109,13 @@ User <-> Orchestrator / K3 (high)
 
 | 代理 | 推荐模式 | 模型 | 职责 |
 | --- | --- | --- | --- |
-| `orchestrator` | primary | `kimi-for-coding/k3` | 用户入口、决策、Specialist 选择、验收和长期记忆。`edit: deny`、`bash: deny`。 |
-| `dispatcher` | subagent | `openai/gpt-5.6-terra` | 执行获授权的节点：调用或恢复已授权的 Specialists，压缩结果，并在检查点返回。`edit: deny`、`bash: allow`（绝不用于修改源文件）。 |
-| `oracle` | subagent | `openai/gpt-5.6-sol` | 为不明确的架构、根因、安全性、兼容性或不可逆权衡提供高级建议。只读。 |
-| `explorer` | subagent | `deepseek/deepseek-v4-flash` | 只读代码库侦察和证据收集。 |
-| `low-fixer` | subagent | `deepseek/deepseek-v4-flash` | Default execution tier for bounded non-trivial tasks whose main path is known and permits necessary local implementation judgment and bounded initial reasoning. |
-| `medium-fixer` | subagent | `openai/gpt-5.6-terra` | A tactical alternative to `low-fixer`, selected by Dispatcher when the task's difficulty or recovery needs make it the better fit. |
-| `deep-fixer` | subagent | `openai/gpt-5.6-sol` | Explicitly authorized complex or high-risk work. |
+| `orchestrator` | primary | `openai/gpt-5.6-sol` | 用户入口、决策、Specialist 选择、验收和长期记忆。`edit: deny`、`bash: deny`。 |
+| `dispatcher` | subagent | `kimi-for-coding/k3` | 执行获授权的节点：调用或恢复已授权的 Specialists，压缩结果，并在检查点返回。`edit: deny`、`bash: allow`（绝不用于修改源文件）。 |
+| `oracle` | subagent | `code-mirror/gpt-5.6-sol` | 为不明确的架构、根因、安全性、兼容性或不可逆权衡提供高级建议。只读。 |
+| `explorer` | subagent | `opencode-go/deepseek-v4-flash` | 只读代码库侦察和证据收集。 |
+| `low-fixer` | subagent | `opencode-go/deepseek-v4-flash` | Default execution tier for bounded non-trivial tasks whose main path is known and permits necessary local implementation judgment and bounded initial reasoning. |
+| `medium-fixer` | subagent | `code-mirror/gpt-5.6-terra` | A tactical alternative to `low-fixer`, selected by Dispatcher when the task's difficulty or recovery needs make it the better fit. |
+| `deep-fixer` | subagent | `code-mirror/gpt-5.6-sol` | Explicitly authorized complex or high-risk work. |
 
 以上为参考配置，实际 `model`/`variant` 由 `opencode-dokana.toml` 决定，可通过会话内 `ctrl+t` 临时覆盖。
 
@@ -161,12 +161,14 @@ In mutation nodes, `low-fixer` is the default execution tier, while Dispatcher s
 | webfetch | deny | allow | 未设置 | allow | 未设置 |
 | websearch | deny | 未设置 | 未设置 | allow | 未设置 |
 | doom_loop | 未设置 | allow | 未设置 | 未设置 | 未设置 |
+| todowrite | deny | allow | 未设置 | 未设置 | 未设置 |
 | external_directory | ask | ask | ask | allow | allow |
 | task -> dispatcher | allow | deny | deny | deny | deny |
 | task -> oracle | allow | deny | deny | deny | deny |
 | task -> explorer | deny | allow | deny | deny | deny |
 | task -> fixers | deny | allow | deny | deny | deny |
 | interrupt_session | allow | allow | deny | deny | deny |
+| skill | `*: deny`, `customize-opencode: allow` | `*: deny`, `customize-opencode: allow` | `*: deny`, `customize-opencode: allow` | `*: deny`, `customize-opencode: allow` | `*: deny`, `customize-opencode: allow`, `ponytail: allow` |
 
 Fixers 是唯一可以修改源文件的代理。尽管 Dispatcher 和 Explorer 具有 `bash: allow`，但它们的提示词规则将 Bash 限制为只读或验证用途。它们绝不能使用 Bash 绕过 `edit: deny` 来修改源文件。
 
@@ -210,31 +212,31 @@ Orchestrator 调用 Dispatcher 必须无条件使用 `task` 工具的 `backgroun
 
 ```toml
 [agents.orchestrator]
-model="kimi-for-coding/k3"
+model="openai/gpt-5.6-sol"
 variant="high"
 
 [agents.dispatcher]
-model="openai/gpt-5.6-luna"
-variant="max"
+model="kimi-for-coding/k3"
+variant="high"
 
 [agents.oracle]
-model="openai/gpt-5.6-sol"
+model="code-mirror/gpt-5.6-sol"
 variant="xhigh"
 
 [agents.explorer]
-model="deepseek/deepseek-v4-flash"
+model="opencode-go/deepseek-v4-flash"
 variant="high"
 
 [agents.low-fixer]
-model="deepseek/deepseek-v4-flash"
+model="opencode-go/deepseek-v4-flash"
 variant="high"
 
 [agents.medium-fixer]
-model="openai/gpt-5.6-terra"
+model="code-mirror/gpt-5.6-terra"
 variant="medium"
 
 [agents.deep-fixer]
-model="openai/gpt-5.6-sol"
+model="code-mirror/gpt-5.6-sol"
 variant="medium"
 
 [agents.dispatcher.permission]
@@ -271,19 +273,28 @@ task="deny"
 "medium-fixer"="allow"
 ```
 
+`skill` 表不会逐 key 合并：自定义 TOML 中的 `permission.skill` 会整体替换默认 skill 表。使用白名单时必须先写 `"*"="deny"`，再写具体技能的 `allow`：
+
+```toml
+[agents.medium-fixer.permission.skill]
+"*"="deny"
+customize-opencode="allow"
+ponytail="allow"
+```
+
 插件不枚举校验 permission key 或 permission value。未知 key 原样透传，非法值交给 OpenCode 自身 schema 在启动时校验。
 
 插件内置默认权限矩阵：
 
 | Agent | 默认 permission |
 | --- | --- |
-| `orchestrator` | `edit: deny`, `bash: deny`, `external_directory: ask`, `read: allow`, `question: allow`, `todowrite: allow`, `grep: deny`, `glob: deny`, `list: deny`, `webfetch: deny`, `websearch: deny`, `lsp: deny`, `interrupt_session: allow`, `task.*: deny`, `task.dispatcher: allow`, `task.oracle: allow` |
-| `dispatcher` | `edit: deny`, `bash: allow`, `todowrite: allow`, `read: allow`, `webfetch: allow`, `doom_loop: allow`, `external_directory: ask`, `interrupt_session: allow`, `task.*: deny`, `task.explorer/low-fixer/medium-fixer/deep-fixer: allow` |
-| `explorer` | `edit: deny`, `bash: allow`, `external_directory: allow`, `task: deny`, `glob: allow`, `grep: allow`, `list: allow`, `webfetch: allow`, `websearch: allow`, `read: allow`, `interrupt_session: deny` |
-| `low-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny`, `interrupt_session: deny` |
-| `medium-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny`, `interrupt_session: deny` |
-| `deep-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny`, `interrupt_session: deny` |
-| `oracle` | `edit: deny`, `bash: deny`, `read: allow`, `grep: allow`, `glob: allow`, `list: allow`, `lsp: allow`, `external_directory: ask`, `task: deny`, `interrupt_session: deny` |
+| `orchestrator` | `edit: deny`, `bash: deny`, `external_directory: ask`, `read: allow`, `question: allow`, `todowrite: deny`, `grep: deny`, `glob: deny`, `list: deny`, `webfetch: deny`, `websearch: deny`, `lsp: deny`, `interrupt_session: allow`, `task.*: deny`, `task.dispatcher: allow`, `task.oracle: allow`, `skill.*: deny`, `skill.customize-opencode: allow` |
+| `dispatcher` | `edit: deny`, `bash: allow`, `todowrite: allow`, `read: allow`, `webfetch: allow`, `doom_loop: allow`, `external_directory: ask`, `interrupt_session: allow`, `task.*: deny`, `task.explorer/low-fixer/medium-fixer/deep-fixer: allow`, `skill.*: deny`, `skill.customize-opencode: allow` |
+| `explorer` | `edit: deny`, `bash: allow`, `external_directory: allow`, `task: deny`, `glob: allow`, `grep: allow`, `list: allow`, `webfetch: allow`, `websearch: allow`, `read: allow`, `interrupt_session: deny`, `skill.*: deny`, `skill.customize-opencode: allow` |
+| `low-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny`, `interrupt_session: deny`, `skill.*: deny`, `skill.customize-opencode: allow`, `skill.ponytail: allow` |
+| `medium-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny`, `interrupt_session: deny`, `skill.*: deny`, `skill.customize-opencode: allow`, `skill.ponytail: allow` |
+| `deep-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny`, `interrupt_session: deny`, `skill.*: deny`, `skill.customize-opencode: allow`, `skill.ponytail: allow` |
+| `oracle` | `edit: deny`, `bash: deny`, `read: allow`, `grep: allow`, `glob: allow`, `list: allow`, `lsp: allow`, `external_directory: ask`, `task: deny`, `interrupt_session: deny`, `skill.*: deny`, `skill.customize-opencode: allow` |
 
 prompt 路径必须为 `.md` 文件，相对 TOML 所在目录解析，支持 `~/` 展开。
 

@@ -1,9 +1,10 @@
 import { expect, test } from "bun:test"
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 import type { Config, PluginInput } from "@opencode-ai/plugin"
 import dokanaPlugin from "./index"
+import { parseToml } from "./parse"
 
 test("the config hook replaces existing permission while preserving other agent fields", async () => {
   const home = await mkdtemp(join(tmpdir(), "opencode-dokana-test-"))
@@ -65,6 +66,7 @@ test("the config hook replaces existing permission while preserving other agent 
       external_directory: "ask",
       interrupt_session: "allow",
       task: { "*": "ask", explorer: "allow", "low-fixer": "allow", "medium-fixer": "allow", "deep-fixer": "allow", oracle: "allow" },
+      skill: { "*": "deny", "customize-opencode": "allow" },
       custom_permission: "not-an-opencode-enum",
     })
   } finally {
@@ -91,10 +93,25 @@ test("the config hook loads the repository default TOML when the user TOML is ab
 
     await hooks.config?.(cfg)
 
-    expect(cfg.agent?.dispatcher?.model).toBe("openai/gpt-5.6-luna")
-    expect(cfg.agent?.dispatcher?.variant).toBe("max")
+    expect(Object.fromEntries(Object.entries(cfg.agent ?? {}).map(([id, agent]) => [id, { model: agent.model, variant: agent.variant }]))).toEqual({
+      orchestrator: { model: "openai/gpt-5.6-sol", variant: "high" },
+      dispatcher: { model: "kimi-for-coding/k3", variant: "high" },
+      oracle: { model: "code-mirror/gpt-5.6-sol", variant: "xhigh" },
+      explorer: { model: "opencode-go/deepseek-v4-flash", variant: "high" },
+      "low-fixer": { model: "opencode-go/deepseek-v4-flash", variant: "high" },
+      "medium-fixer": { model: "code-mirror/gpt-5.6-terra", variant: "medium" },
+      "deep-fixer": { model: "code-mirror/gpt-5.6-sol", variant: "medium" },
+    })
   } finally {
     process.env.HOME = previousHome
     await rm(home, { recursive: true, force: true })
   }
+})
+
+test("the repository default TOML parses without permission tables", async () => {
+  const parsed = parseToml(await readFile(join(import.meta.dir, "opencode-dokana.default.toml"), "utf8"))
+  expect(parsed.ok).toBe(true)
+  if (!parsed.ok) return
+  const agents = (parsed.value as { agents: Record<string, Record<string, unknown>> }).agents
+  for (const agent of Object.values(agents)) expect(agent.permission).toBeUndefined()
 })
