@@ -1,6 +1,6 @@
 # opencode-dokana
 
-opencode-dokana 是一个 OpenCode 插件，通过 `~/.config/opencode/opencode-dokana.toml` 集中管理七个 agent 的 `model`/`variant`/`prompt`/`permission` 覆盖。要求 opencode `>= 1.18.18`；这是面向 opencode Bun plugin loader 的 TypeScript source distribution。
+opencode-dokana 是一个 OpenCode 插件，通过 `~/.config/opencode/opencode-dokana.toml` 集中管理八个 agent 的 `model`/`variant`/`prompt`/`permission` 覆盖。要求 opencode `>= 1.18.18`；这是面向 opencode Bun plugin loader 的 TypeScript source distribution。
 
 当前版本：`0.4.0`。本版本将 `interrupt_session` 更新为面向子孙 task 的异步 v1 abort 请求，并明确 Orchestrator 与 Dispatcher 的后台/前台调度纪律。
 
@@ -111,6 +111,7 @@ User <-> Orchestrator / GPT-5.6 Sol (high)
 | --- | --- | --- | --- |
 | `orchestrator` | primary | `openai/gpt-5.6-sol` | 用户入口、战略决策、节点边界、验收和长期记忆。`edit: deny`、`bash: deny`。 |
 | `dispatcher` | subagent | `kimi-for-coding/k3` | 执行获授权的节点：自主调用或恢复所选 Specialists，压缩结果，并在检查点返回。`edit: deny`、`bash: allow`（绝不用于修改源文件）。 |
+| `sergeant` | primary | `openai/gpt-5.6-sol` | 与 `orchestrator` 并行的合并主代理：同时具备 Orchestrator 的用户入口/战略决策能力与 Dispatcher 的战术调度能力，直接调用所有 Specialists；调用 `deep-fixer` 为 `ask` 而非 `allow`。`edit: deny`、`bash: allow`。 |
 | `oracle` | subagent | `code-mirror/gpt-5.6-sol` | 为不明确的架构、根因、安全性、兼容性或不可逆权衡提供高级建议。只读。 |
 | `explorer` | subagent | `opencode-go/deepseek-v4-flash` | 只读代码库侦察和证据收集。 |
 | `low-fixer` | subagent | `opencode-go/deepseek-v4-flash` | Mutating Specialist selected by Dispatcher according to the goal, evidence, approved method, and recovery needs. |
@@ -289,6 +290,7 @@ ponytail="allow"
 | --- | --- |
 | `orchestrator` | `edit: deny`, `bash: deny`, `external_directory: ask`, `read: allow`, `question: allow`, `todowrite: deny`, `grep: deny`, `glob: deny`, `list: deny`, `webfetch: deny`, `websearch: deny`, `lsp: deny`, `interrupt_session: allow`, `task.*: deny`, `task.dispatcher: allow`, `task.oracle: allow`, `skill.*: deny`, `skill.customize-opencode: allow` |
 | `dispatcher` | `edit: deny`, `bash: allow`, `todowrite: allow`, `read: allow`, `webfetch: allow`, `doom_loop: allow`, `external_directory: ask`, `interrupt_session: allow`, `task.*: deny`, `task.explorer/low-fixer/medium-fixer/deep-fixer: allow`, `skill.*: deny`, `skill.customize-opencode: allow` |
+| `sergeant` | `edit: deny`, `bash: allow`, `external_directory: ask`, `read: allow`, `question: allow`, `todowrite: allow`, `grep: allow`, `glob: allow`, `list: allow`, `webfetch: allow`, `websearch: allow`, `lsp: allow`, `doom_loop: allow`, `interrupt_session: allow`, `task.*: deny`, `task.explorer/low-fixer/medium-fixer/oracle: allow`, `task.deep-fixer: ask`, `skill.*: deny`, `skill.customize-opencode: allow` |
 | `explorer` | `edit: deny`, `bash: allow`, `external_directory: allow`, `task: deny`, `glob: allow`, `grep: allow`, `list: allow`, `webfetch: allow`, `websearch: allow`, `read: allow`, `interrupt_session: deny`, `skill.*: deny`, `skill.customize-opencode: allow` |
 | `low-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny`, `interrupt_session: deny`, `skill.*: deny`, `skill.customize-opencode: allow`, `skill.ponytail: allow` |
 | `medium-fixer` | `edit: allow`, `bash: allow`, `external_directory: allow`, `task: deny`, `interrupt_session: deny`, `skill.*: deny`, `skill.customize-opencode: allow`, `skill.ponytail: allow` |

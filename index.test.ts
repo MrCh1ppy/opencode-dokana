@@ -96,6 +96,7 @@ test("the config hook loads the repository default TOML when the user TOML is ab
     expect(Object.fromEntries(Object.entries(cfg.agent ?? {}).map(([id, agent]) => [id, { model: agent.model, variant: agent.variant }]))).toEqual({
       orchestrator: { model: "openai/gpt-5.6-sol", variant: "high" },
       dispatcher: { model: "kimi-for-coding/k3", variant: "high" },
+      sergeant: { model: "openai/gpt-5.6-sol", variant: "high" },
       oracle: { model: "code-mirror/gpt-5.6-sol", variant: "xhigh" },
       explorer: { model: "opencode-go/deepseek-v4-flash", variant: "high" },
       "low-fixer": { model: "opencode-go/deepseek-v4-flash", variant: "high" },

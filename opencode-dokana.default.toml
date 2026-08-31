@@ -6,6 +6,10 @@ variant="high"
 model="kimi-for-coding/k3"
 variant="high"
 
+[agents.sergeant]
+model="openai/gpt-5.6-sol"
+variant="high"
+
 [agents.oracle]
 model="code-mirror/gpt-5.6-sol"
 variant="xhigh"

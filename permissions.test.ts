@@ -18,10 +18,11 @@ void ({ edit: "unexpected-action" } satisfies DefaultPermission)
 // @ts-expect-error Default skill actions must be valid actions.
 void ({ skill: { "example-skill": "unexpected-action" } } satisfies DefaultPermission)
 
-test("the seven default permission matrices match the approved snapshot", () => {
+test("the eight default permission matrices match the approved snapshot", () => {
   expect(defaultPermissions).toEqual({
     orchestrator: { edit: "deny", bash: "deny", external_directory: "ask", read: "allow", question: "allow", todowrite: "deny", grep: "deny", glob: "deny", list: "deny", webfetch: "deny", websearch: "deny", lsp: "deny", interrupt_session: "allow", task: { "*": "deny", dispatcher: "allow", oracle: "allow" }, skill: { "*": "deny", "customize-opencode": "allow" } },
     dispatcher: { edit: "deny", bash: "allow", todowrite: "allow", read: "allow", webfetch: "allow", doom_loop: "allow", external_directory: "ask", interrupt_session: "allow", task: { "*": "deny", explorer: "allow", "low-fixer": "allow", "medium-fixer": "allow", "deep-fixer": "allow" }, skill: { "*": "deny", "customize-opencode": "allow" } },
+    sergeant: { edit: "deny", bash: "allow", external_directory: "ask", read: "allow", question: "allow", todowrite: "allow", grep: "allow", glob: "allow", list: "allow", webfetch: "allow", websearch: "allow", lsp: "allow", doom_loop: "allow", interrupt_session: "allow", task: { "*": "deny", explorer: "allow", "low-fixer": "allow", "medium-fixer": "allow", oracle: "allow", "deep-fixer": "ask" }, skill: { "*": "deny", "customize-opencode": "allow" } },
     explorer: { edit: "deny", bash: "allow", external_directory: "allow", task: "deny", glob: "allow", grep: "allow", list: "allow", webfetch: "allow", websearch: "allow", read: "allow", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow" } },
     "low-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow", ponytail: "allow" } },
     "medium-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow", ponytail: "allow" } },
@@ -114,6 +115,33 @@ test("skill tables use ordered defaults and TOML overrides replace them complete
 test("orchestrator and dispatcher retain their distinct todowrite defaults", () => {
   expect(effectivePermission("orchestrator").todowrite).toBe("deny")
   expect(effectivePermission("dispatcher").todowrite).toBe("allow")
+})
+
+test("sergeant merges orchestrator and dispatcher capabilities with deep-fixer gated to ask", () => {
+  const permission = effectivePermission("sergeant")
+  // Union of orchestrator and dispatcher scalar capabilities.
+  expect(permission.edit).toBe("deny")
+  expect(permission.bash).toBe("allow")
+  expect(permission.external_directory).toBe("ask")
+  expect(permission.read).toBe("allow")
+  expect(permission.question).toBe("allow")
+  expect(permission.todowrite).toBe("allow")
+  expect(permission.webfetch).toBe("allow")
+  expect(permission.doom_loop).toBe("allow")
+  expect(permission.interrupt_session).toBe("allow")
+  // Every existing Specialist is callable; deep-fixer is ask, never allow.
+  expect(permission.task).toEqual({
+    "*": "deny",
+    explorer: "allow",
+    "low-fixer": "allow",
+    "medium-fixer": "allow",
+    oracle: "allow",
+    "deep-fixer": "ask",
+  })
+  // The wildcard stays first so last-match-wins keeps the specific deep-fixer ask rule final.
+  expect(Object.keys(permission.task as object)).toEqual(["*", "explorer", "low-fixer", "medium-fixer", "oracle", "deep-fixer"])
+  // No dispatcher route exists, so sergeant cannot bypass the deep-fixer ask gate via dispatcher.
+  expect((permission.task as Record<string, unknown>).dispatcher).toBeUndefined()
 })
 
 test("effective permission creation never mutates default constants", () => {

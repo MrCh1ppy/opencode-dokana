@@ -1,7 +1,7 @@
 {
   "name": "@mrch1ppy/opencode-dokana",
   "version": "0.4.0",
-  "description": "OpenCode plugin that applies TOML-driven model, variant, prompt, and permission overrides to the seven supported agents.",
+  "description": "OpenCode plugin that applies TOML-driven model, variant, prompt, and permission overrides to the eight supported agents.",
   "type": "module",
   "main": "./index.ts",
   "files": [

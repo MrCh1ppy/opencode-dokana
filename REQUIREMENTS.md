@@ -2,7 +2,7 @@
 
 ## Purpose and Scope
 
-OpenCode Dokana centrally configures the `model`, `variant`, `prompt`, and `permission` of exactly seven agents: `orchestrator`, `dispatcher`, `explorer`, `low-fixer`, `medium-fixer`, `deep-fixer`, and `oracle`. The plugin reads overrides from `~/.config/opencode/opencode-dokana.toml`.
+OpenCode Dokana centrally configures the `model`, `variant`, `prompt`, and `permission` of exactly eight agents: `orchestrator`, `dispatcher`, `sergeant`, `explorer`, `low-fixer`, `medium-fixer`, `deep-fixer`, and `oracle`. The plugin reads overrides from `~/.config/opencode/opencode-dokana.toml`.
 
 ## Behavior
 
@@ -24,7 +24,7 @@ File-level errors, including a missing TOML file, TOML syntax error, or missing 
 
 ## Acceptance Highlights
 
-Stage 6 acceptance covers the baseline, priority, error-path, boundary, and quality checks. It verifies the seven default permission matrices, TOML permission overrides, task merge ordering and scalar replacement, unknown permission passthrough, model/variant/prompt/permission error isolation, all seven baseline overrides, prompt fallback behavior, source inventory reporting, config-hook and tool registration, preservation of unrelated agent fields, supported paths, strict TypeScript quality, and `bun` and `tsc` gates.
+Stage 6 acceptance covers the baseline, priority, error-path, boundary, and quality checks. It verifies the eight default permission matrices, TOML permission overrides, task merge ordering and scalar replacement, unknown permission passthrough, model/variant/prompt/permission error isolation, all eight baseline overrides, prompt fallback behavior, source inventory reporting, config-hook and tool registration, preservation of unrelated agent fields, supported paths, strict TypeScript quality, and `bun` and `tsc` gates.
 
 ## Constraints
 

@@ -88,6 +88,35 @@ export const defaultPermissions = {
       "customize-opencode": "allow",
     },
   },
+  // Merged primary combining orchestrator and dispatcher capabilities; deep-fixer requires approval.
+  sergeant: {
+    edit: "deny",
+    bash: "allow",
+    external_directory: "ask",
+    read: "allow",
+    question: "allow",
+    todowrite: "allow",
+    grep: "allow",
+    glob: "allow",
+    list: "allow",
+    webfetch: "allow",
+    websearch: "allow",
+    lsp: "allow",
+    doom_loop: "allow",
+    interrupt_session: "allow",
+    task: {
+      "*": "deny",
+      explorer: "allow",
+      "low-fixer": "allow",
+      "medium-fixer": "allow",
+      oracle: "allow",
+      "deep-fixer": "ask",
+    },
+    skill: {
+      "*": "deny",
+      "customize-opencode": "allow",
+    },
+  },
   // Read-only repository scout.
   explorer: {
     edit: "deny",
