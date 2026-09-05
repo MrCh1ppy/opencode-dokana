@@ -1,8 +1,6 @@
 import type { PermissionOverride } from "./permissions"
 
 export const agentIds = [
-  "orchestrator",
-  "dispatcher",
   "sergeant",
   "explorer",
   "low-fixer",

@@ -41,54 +41,7 @@ export type DefaultPermission = Readonly<Partial<Record<Exclude<DefaultPermissio
   Readonly<{ [PERMISSION_KEYS.task]?: DefaultTaskValue; [PERMISSION_KEYS.skill]?: DefaultSkill }>
 
 export const defaultPermissions = {
-  // Primary user-facing planner: no direct mutation or shell access.
-  orchestrator: {
-    edit: "deny",
-    bash: "deny",
-    external_directory: "ask",
-    read: "allow",
-    question: "allow",
-    todowrite: "deny",
-    grep: "deny",
-    glob: "deny",
-    list: "deny",
-    webfetch: "deny",
-    websearch: "deny",
-    lsp: "deny",
-    interrupt_session: "allow",
-    task: {
-      "*": "deny",
-      dispatcher: "allow",
-      oracle: "allow",
-    },
-    skill: {
-      "*": "deny",
-      "customize-opencode": "allow",
-    },
-  },
-  // Bounded coordinator: can run checks and route only to approved specialists.
-  dispatcher: {
-    edit: "deny",
-    bash: "allow",
-    todowrite: "allow",
-    read: "allow",
-    webfetch: "allow",
-    doom_loop: "allow",
-    external_directory: "ask",
-    interrupt_session: "allow",
-    task: {
-      "*": "deny",
-      explorer: "allow",
-      "low-fixer": "allow",
-      "medium-fixer": "allow",
-      "deep-fixer": "allow",
-    },
-    skill: {
-      "*": "deny",
-      "customize-opencode": "allow",
-    },
-  },
-  // Merged primary combining orchestrator and dispatcher capabilities; deep-fixer requires approval.
+  // Primary coordinator; deep-fixer requires approval.
   sergeant: {
     edit: "deny",
     bash: "allow",

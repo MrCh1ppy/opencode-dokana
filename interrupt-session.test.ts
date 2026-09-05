@@ -33,7 +33,7 @@ function toolContext(sessionID: string, ask: ToolContext["ask"]): ToolContext {
   return {
     sessionID,
     messageID: "message-1",
-    agent: "orchestrator",
+    agent: "sergeant",
     directory: "/workspace",
     worktree: "/workspace",
     abort: new AbortController().signal,

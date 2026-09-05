@@ -5,6 +5,10 @@ import { tmpdir } from "node:os"
 import type { Config, PluginInput } from "@opencode-ai/plugin"
 import dokanaPlugin from "./index"
 import { parseToml } from "./parse"
+import { createPlan } from "./plan"
+import { validateToml } from "./validate"
+
+type ConfigWithSkills = Config & { skills?: { paths?: string[] } }
 
 test("the config hook replaces existing permission while preserving other agent fields", async () => {
   const home = await mkdtemp(join(tmpdir(), "opencode-dokana-test-"))
@@ -12,11 +16,11 @@ test("the config hook replaces existing permission while preserving other agent 
   try {
     await mkdir(join(home, ".config", "opencode"), { recursive: true })
     await writeFile(join(home, ".config", "opencode", "opencode-dokana.toml"), [
-      "[agents.dispatcher.permission]",
+      "[agents.sergeant.permission]",
       "read = \"deny\"",
       "custom_permission = \"not-an-opencode-enum\"",
       "",
-      "[agents.dispatcher.permission.task]",
+      "[agents.sergeant.permission.task]",
       "\"*\" = \"ask\"",
       "oracle = \"allow\"",
     ].join("\n"))
@@ -33,7 +37,7 @@ test("the config hook replaces existing permission while preserving other agent 
     const hooks = await dokanaPlugin(input)
     const cfg = {
       agent: {
-        dispatcher: {
+        sergeant: {
           model: "existing/model",
           description: "existing description",
           mode: "subagent",
@@ -41,7 +45,7 @@ test("the config hook replaces existing permission while preserving other agent 
           permission: { edit: "ask" },
         },
       },
-    } as unknown as Config
+    } as unknown as ConfigWithSkills
 
     await hooks.config?.(cfg)
 
@@ -51,12 +55,12 @@ test("the config hook replaces existing permission while preserving other agent 
     await hooks.config?.(cfg)
     expect(cfg.skills?.paths).toHaveLength(skillsPathCount)
 
-    const dispatcher = cfg.agent?.dispatcher as unknown as Record<string, unknown>
-    expect(dispatcher.model).toBe("existing/model")
-    expect(dispatcher.description).toBe("existing description")
-    expect(dispatcher.mode).toBe("subagent")
-    expect(dispatcher.maxSteps).toBe(3)
-    expect(dispatcher.permission).toEqual({
+    const sergeant = cfg.agent?.sergeant as unknown as Record<string, unknown>
+    expect(sergeant.model).toBe("existing/model")
+    expect(sergeant.description).toBe("existing description")
+    expect(sergeant.mode).toBe("subagent")
+    expect(sergeant.maxSteps).toBe(3)
+    expect(sergeant.permission).toEqual({
       edit: "deny",
       bash: "allow",
       todowrite: "allow",
@@ -65,7 +69,13 @@ test("the config hook replaces existing permission while preserving other agent 
       doom_loop: "allow",
       external_directory: "ask",
       interrupt_session: "allow",
-      task: { "*": "ask", explorer: "allow", "low-fixer": "allow", "medium-fixer": "allow", "deep-fixer": "allow", oracle: "allow" },
+      question: "allow",
+      grep: "allow",
+      glob: "allow",
+      list: "allow",
+      websearch: "allow",
+      lsp: "allow",
+      task: { "*": "ask", explorer: "allow", "low-fixer": "allow", "medium-fixer": "allow", oracle: "allow", "deep-fixer": "ask" },
       skill: { "*": "deny", "customize-opencode": "allow" },
       custom_permission: "not-an-opencode-enum",
     })
@@ -73,6 +83,27 @@ test("the config hook replaces existing permission while preserving other agent 
     process.env.HOME = previousHome
     await rm(home, { recursive: true, force: true })
   }
+})
+
+test("legacy TOML agents warn and are not injected", () => {
+  const parsed = parseToml("[agents.orchestrator]\nmodel=\"openai/model\"\nvariant=\"high\"\n\n[agents.dispatcher]\nmodel=\"openai/model\"\nvariant=\"high\"")
+  expect(parsed.ok).toBe(true)
+  if (!parsed.ok) return
+
+  const validation = validateToml(parsed.value)
+  expect(validation.issues).toEqual([
+    { level: "warning", message: "Unknown agent ignored: orchestrator" },
+    { level: "warning", message: "Unknown agent ignored: dispatcher" },
+  ])
+  expect(validation.agents).toEqual({})
+  expect(createPlan(validation).agents.map((plan) => plan.id)).toEqual([
+    "sergeant",
+    "explorer",
+    "low-fixer",
+    "medium-fixer",
+    "deep-fixer",
+    "oracle",
+  ])
 })
 
 test("the config hook loads the repository default TOML when the user TOML is absent", async () => {
@@ -89,13 +120,11 @@ test("the config hook loads the repository default TOML when the user TOML is ab
       },
     } as unknown as PluginInput
     const hooks = await dokanaPlugin(input)
-    const cfg = { agent: {} } as unknown as Config
+    const cfg = { agent: {} } as unknown as ConfigWithSkills
 
     await hooks.config?.(cfg)
 
-    expect(Object.fromEntries(Object.entries(cfg.agent ?? {}).map(([id, agent]) => [id, { model: agent.model, variant: agent.variant }]))).toEqual({
-      orchestrator: { model: "openai/gpt-5.6-sol", variant: "high" },
-      dispatcher: { model: "kimi-for-coding/k3", variant: "high" },
+    expect(Object.fromEntries(Object.entries(cfg.agent ?? {}).map(([id, agent]) => [id, { model: agent?.model, variant: agent?.variant }]))).toEqual({
       sergeant: { model: "openai/gpt-5.6-sol", variant: "high" },
       oracle: { model: "code-mirror/gpt-5.6-sol", variant: "xhigh" },
       explorer: { model: "opencode-go/deepseek-v4-flash", variant: "high" },

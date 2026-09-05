@@ -8,6 +8,10 @@ import { createPlan } from "./plan"
 import { resolvePrompts } from "./prompts"
 import { invalidFile, validateToml } from "./validate"
 
+type ConfigWithSkills = import("@opencode-ai/plugin").Config & {
+  skills?: { paths?: string[] }
+}
+
 function getTomlPath(): string {
   return `${process.env.HOME ?? Bun.env.HOME ?? ""}/.config/opencode/opencode-dokana.toml`
 }
@@ -30,10 +34,11 @@ export default async function dokanaPlugin(input: PluginInput): Promise<Hooks> {
       interrupt_session: createInterruptSessionTool(input),
     },
     config: async (cfg) => {
+      const config = cfg as ConfigWithSkills
       const skillsDir = resolve(import.meta.dir, "skills")
-      cfg.skills = cfg.skills ?? {}
-      cfg.skills.paths = cfg.skills.paths ?? []
-      if (!cfg.skills.paths.includes(skillsDir)) cfg.skills.paths.push(skillsDir)
+      config.skills = config.skills ?? {}
+      config.skills.paths = config.skills.paths ?? []
+      if (!config.skills.paths.includes(skillsDir)) config.skills.paths.push(skillsDir)
 
       const userTomlPath = getTomlPath()
       const tomlPath = await Bun.file(userTomlPath).exists() ? userTomlPath : getDefaultTomlPath()
