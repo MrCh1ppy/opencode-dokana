@@ -43,7 +43,7 @@ export type DefaultPermission = Readonly<Partial<Record<Exclude<DefaultPermissio
 export const defaultPermissions = {
   // Primary coordinator; deep-fixer requires approval.
   sergeant: {
-    edit: "deny",
+    edit: "allow",
     bash: "allow",
     external_directory: "ask",
     read: "allow",

@@ -61,7 +61,7 @@ test("the config hook replaces existing permission while preserving other agent 
     expect(sergeant.mode).toBe("subagent")
     expect(sergeant.maxSteps).toBe(3)
     expect(sergeant.permission).toEqual({
-      edit: "deny",
+      edit: "allow",
       bash: "allow",
       todowrite: "allow",
       read: "deny",

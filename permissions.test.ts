@@ -20,7 +20,7 @@ void ({ skill: { "example-skill": "unexpected-action" } } satisfies DefaultPermi
 
 test("the six default permission matrices match the approved snapshot", () => {
   expect(defaultPermissions).toEqual({
-    sergeant: { edit: "deny", bash: "allow", external_directory: "ask", read: "allow", question: "allow", todowrite: "allow", grep: "allow", glob: "allow", list: "allow", webfetch: "allow", websearch: "allow", lsp: "allow", doom_loop: "allow", interrupt_session: "allow", task: { "*": "deny", explorer: "allow", "low-fixer": "allow", "medium-fixer": "allow", oracle: "allow", "deep-fixer": "ask" }, skill: { "*": "deny", "customize-opencode": "allow" } },
+    sergeant: { edit: "allow", bash: "allow", external_directory: "ask", read: "allow", question: "allow", todowrite: "allow", grep: "allow", glob: "allow", list: "allow", webfetch: "allow", websearch: "allow", lsp: "allow", doom_loop: "allow", interrupt_session: "allow", task: { "*": "deny", explorer: "allow", "low-fixer": "allow", "medium-fixer": "allow", oracle: "allow", "deep-fixer": "ask" }, skill: { "*": "deny", "customize-opencode": "allow" } },
     explorer: { edit: "deny", bash: "allow", external_directory: "allow", task: "deny", glob: "allow", grep: "allow", list: "allow", webfetch: "allow", websearch: "allow", read: "allow", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow" } },
     "low-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow", ponytail: "allow" } },
     "medium-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow", ponytail: "allow" } },
@@ -112,7 +112,7 @@ test("skill tables use ordered defaults and TOML overrides replace them complete
 
 test("sergeant routes directly to specialists with deep-fixer gated to ask", () => {
   const permission = effectivePermission("sergeant")
-  expect(permission.edit).toBe("deny")
+  expect(permission.edit).toBe("allow")
   expect(permission.bash).toBe("allow")
   expect(permission.external_directory).toBe("ask")
   expect(permission.read).toBe("allow")

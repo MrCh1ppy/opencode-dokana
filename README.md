@@ -24,7 +24,7 @@ Sergeant selects the shortest reliable route rather than following a fixed pipel
 
 | Agent | Mode | Default model | Responsibility |
 | --- | --- | --- | --- |
-| `sergeant` | primary | `openai/gpt-5.6-sol` | User-facing coordinator and direct specialist router. `edit: deny`, `bash: allow`. |
+| `sergeant` | primary | `openai/gpt-5.6-sol` | User-facing coordinator and direct specialist router. `edit: allow`, `bash: allow`. |
 | `oracle` | subagent | `code-mirror/gpt-5.6-sol` | Read-only technical advisor. |
 | `explorer` | subagent | `opencode-go/deepseek-v4-flash` | Read-only codebase reconnaissance. |
 | `low-fixer` | subagent | `opencode-go/deepseek-v4-flash` | Simple, low-risk implementation. |
@@ -37,12 +37,12 @@ The actual `model` and `variant` are chosen by `opencode-dokana.toml`; session-l
 
 | Agent | Default permission summary |
 | --- | --- |
-| `sergeant` | `edit: deny`, `bash: allow`, `external_directory: ask`, repository tools allowed, `task.*: deny`, `task.explorer/low-fixer/medium-fixer/oracle: allow`, `task.deep-fixer: ask` |
+| `sergeant` | `edit: allow`, `bash: allow`, `external_directory: ask`, repository tools allowed, `task.*: deny`, `task.explorer/low-fixer/medium-fixer/oracle: allow`, `task.deep-fixer: ask` |
 | `oracle` | Read-only tools allowed; `edit`, `bash`, `task`, and `interrupt_session`: deny |
 | `explorer` | Read-only tools and `bash`: allow; `task` and `interrupt_session`: deny |
 | `low-fixer`, `medium-fixer`, `deep-fixer` | `edit`, `bash`, and `external_directory`: allow; `task` and `interrupt_session`: deny |
 
-Fixers are the only agents allowed to edit source files by the orchestration responsibility rules. This is not a hard read-only boundary for Sergeant or Explorer: both have `bash: allow`, so their prompts must not use Bash to mutate files. The `ask` gate for Sergeant calling `deep-fixer` is enforced by OpenCode's task permission, not merely by prompt text.
+Fixers execute source-file edits under the orchestration responsibility rules. Sergeant now holds the `edit` permission but should still delegate source changes to Fixers. This is not a hard read-only boundary for Sergeant or Explorer: both have `bash: allow`, so their prompts must not use Bash to mutate files. The `ask` gate for Sergeant calling `deep-fixer` is enforced by OpenCode's task permission, not merely by prompt text.
 
 ## Interrupting descendant tasks
 
