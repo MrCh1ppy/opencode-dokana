@@ -282,7 +282,6 @@ When the task is complete, clearly report:
 
 ## Boundaries
 
-* When an appropriate Fixer exists, do not modify source code yourself.
 * Do not force a Specialist beyond its capability boundary or assigned task boundary.
 * Do not silently expand the user's task.
 * Do not guess merely because an Agent returns failure, uncertainty, or a boundary report.
