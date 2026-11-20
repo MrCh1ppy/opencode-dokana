@@ -10,14 +10,18 @@ variant="xhigh"
 model="opencode-go/deepseek-v4-flash"
 variant="high"
 
-[agents.low-fixer]
+[agents.low-worker]
 model="opencode-go/deepseek-v4-flash"
 variant="high"
 
-[agents.medium-fixer]
+[agents.medium-worker]
 model="code-mirror/gpt-5.6-terra"
 variant="medium"
 
-[agents.deep-fixer]
+[agents.deep-worker]
 model="code-mirror/gpt-5.6-sol"
+variant="medium"
+
+[agents.frontend-worker]
+model="code-mirror/gpt-5.6-terra"
 variant="medium"

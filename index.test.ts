@@ -75,7 +75,7 @@ test("the config hook replaces existing permission while preserving other agent 
       list: "allow",
       websearch: "allow",
       lsp: "allow",
-      task: { "*": "ask", explorer: "allow", "low-fixer": "allow", "medium-fixer": "allow", oracle: "allow", "deep-fixer": "ask" },
+      task: { "*": "ask", explorer: "allow", "low-worker": "allow", "medium-worker": "allow", "frontend-worker": "allow", oracle: "allow", "deep-worker": "ask" },
       skill: { "*": "deny", "customize-opencode": "allow" },
       custom_permission: "not-an-opencode-enum",
     })
@@ -86,22 +86,21 @@ test("the config hook replaces existing permission while preserving other agent 
 })
 
 test("legacy TOML agents warn and are not injected", () => {
-  const parsed = parseToml("[agents.orchestrator]\nmodel=\"openai/model\"\nvariant=\"high\"\n\n[agents.dispatcher]\nmodel=\"openai/model\"\nvariant=\"high\"")
+  const legacyIds = ["orchestrator", "dispatcher", "low-fixer", "medium-fixer", "deep-fixer"]
+  const parsed = parseToml(legacyIds.map((id) => `[agents.${id}]\nmodel="openai/model"\nvariant="high"`).join("\n\n"))
   expect(parsed.ok).toBe(true)
   if (!parsed.ok) return
 
   const validation = validateToml(parsed.value)
-  expect(validation.issues).toEqual([
-    { level: "warning", message: "Unknown agent ignored: orchestrator" },
-    { level: "warning", message: "Unknown agent ignored: dispatcher" },
-  ])
+  expect(validation.issues).toEqual(legacyIds.map((id) => ({ level: "warning", message: `Unknown agent ignored: ${id}` })))
   expect(validation.agents).toEqual({})
   expect(createPlan(validation).agents.map((plan) => plan.id)).toEqual([
     "sergeant",
     "explorer",
-    "low-fixer",
-    "medium-fixer",
-    "deep-fixer",
+    "low-worker",
+    "medium-worker",
+    "deep-worker",
+    "frontend-worker",
     "oracle",
   ])
 })
@@ -128,10 +127,14 @@ test("the config hook loads the repository default TOML when the user TOML is ab
       sergeant: { model: "openai/gpt-5.6-sol", variant: "high" },
       oracle: { model: "code-mirror/gpt-5.6-sol", variant: "xhigh" },
       explorer: { model: "opencode-go/deepseek-v4-flash", variant: "high" },
-      "low-fixer": { model: "opencode-go/deepseek-v4-flash", variant: "high" },
-      "medium-fixer": { model: "code-mirror/gpt-5.6-terra", variant: "medium" },
-      "deep-fixer": { model: "code-mirror/gpt-5.6-sol", variant: "medium" },
+      "low-worker": { model: "opencode-go/deepseek-v4-flash", variant: "high" },
+      "medium-worker": { model: "code-mirror/gpt-5.6-terra", variant: "medium" },
+      "deep-worker": { model: "code-mirror/gpt-5.6-sol", variant: "medium" },
+      "frontend-worker": { model: "code-mirror/gpt-5.6-terra", variant: "medium" },
     })
+    for (const [id, agent] of Object.entries(cfg.agent ?? {})) {
+      expect(agent?.prompt).toBe(await readFile(join(import.meta.dir, "prompts", `${id}.md`), "utf8"))
+    }
   } finally {
     process.env.HOME = previousHome
     await rm(home, { recursive: true, force: true })

@@ -41,7 +41,7 @@ export type DefaultPermission = Readonly<Partial<Record<Exclude<DefaultPermissio
   Readonly<{ [PERMISSION_KEYS.task]?: DefaultTaskValue; [PERMISSION_KEYS.skill]?: DefaultSkill }>
 
 export const defaultPermissions = {
-  // Primary coordinator; deep-fixer requires approval.
+  // Primary coordinator; deep-worker requires approval.
   sergeant: {
     edit: "allow",
     bash: "allow",
@@ -60,10 +60,11 @@ export const defaultPermissions = {
     task: {
       "*": "deny",
       explorer: "allow",
-      "low-fixer": "allow",
-      "medium-fixer": "allow",
+      "low-worker": "allow",
+      "medium-worker": "allow",
+      "frontend-worker": "allow",
       oracle: "allow",
-      "deep-fixer": "ask",
+      "deep-worker": "ask",
     },
     skill: {
       "*": "deny",
@@ -89,7 +90,7 @@ export const defaultPermissions = {
     },
   },
   // Low-risk reversible implementer.
-  "low-fixer": {
+  "low-worker": {
     edit: "allow",
     bash: "allow",
     external_directory: "allow",
@@ -102,7 +103,7 @@ export const defaultPermissions = {
     },
   },
   // Standard multi-file implementer.
-  "medium-fixer": {
+  "medium-worker": {
     edit: "allow",
     bash: "allow",
     external_directory: "allow",
@@ -115,7 +116,20 @@ export const defaultPermissions = {
     },
   },
   // High-risk implementer for approved complex changes.
-  "deep-fixer": {
+  "deep-worker": {
+    edit: "allow",
+    bash: "allow",
+    external_directory: "allow",
+    task: "deny",
+    interrupt_session: "deny",
+    skill: {
+      "*": "deny",
+      "customize-opencode": "allow",
+      ponytail: "allow",
+    },
+  },
+  // UI design and frontend implementer.
+  "frontend-worker": {
     edit: "allow",
     bash: "allow",
     external_directory: "allow",

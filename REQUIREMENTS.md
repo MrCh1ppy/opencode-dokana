@@ -2,11 +2,13 @@
 
 ## Purpose and Scope
 
-OpenCode Dokana centrally configures the `model`, `variant`, `prompt`, and `permission` of exactly six agents: `sergeant`, `explorer`, `low-fixer`, `medium-fixer`, `deep-fixer`, and `oracle`. The plugin reads overrides from `~/.config/opencode/opencode-dokana.toml`.
+OpenCode Dokana centrally configures the `model`, `variant`, `prompt`, and `permission` of exactly seven agents: `sergeant`, `explorer`, `low-worker`, `medium-worker`, `deep-worker`, `frontend-worker`, and `oracle`. The plugin reads overrides from `~/.config/opencode/opencode-dokana.toml`.
 
 ## Behavior
 
 The plugin registers one `config` hook and the `interrupt_session` custom tool. At startup, the config hook loads the configuration through this pipeline: read TOML, parse, validate, plan, resolve and read prompts, apply, then notify. Each agent receives a newly constructed effective permission object from the plugin default matrix and its TOML permission fragment. The permission object replaces every existing agent-level permission source, including frontmatter and `opencode.json`; all other agent fields are preserved. The plan is complete before application begins, so there is no half-applied state.
+
+Sergeant can directly call `explorer`, `oracle`, `low-worker`, `medium-worker`, and `frontend-worker` by default; calls to `deep-worker` are gated by `ask`. `low-worker` handles simple, low-risk implementation, `medium-worker` handles non-architectural technical problems, and `deep-worker` handles complex work. `frontend-worker` owns UI visual design, interaction design, responsive design, and related frontend implementation, not general technical work that merely happens in frontend code. Its bundled model matches `medium-worker` (`code-mirror/gpt-5.6-terra`, variant `medium`). Like the general workers, it defaults to `allow` for `edit`, `bash`, and `external_directory`, `deny` for `task` and `interrupt_session`, and allows only the `customize-opencode` and `ponytail` skills.
 
 ## Priority
 
@@ -24,7 +26,7 @@ File-level errors, including a missing TOML file, TOML syntax error, or missing 
 
 ## Acceptance Highlights
 
-Stage 6 acceptance covers the baseline, priority, error-path, boundary, and quality checks. It verifies the six default permission matrices, TOML permission overrides, task merge ordering and scalar replacement, unknown permission passthrough, model/variant/prompt/permission error isolation, all six baseline overrides, prompt fallback behavior, source inventory reporting, config-hook and tool registration, preservation of unrelated agent fields, supported paths, strict TypeScript quality, and `bun` and `tsc` gates.
+Stage 6 acceptance covers the baseline, priority, error-path, boundary, and quality checks. It verifies the seven default permission matrices, TOML permission overrides, task merge ordering and scalar replacement, unknown permission passthrough, model/variant/prompt/permission error isolation, all seven baseline overrides, prompt fallback behavior, source inventory reporting, config-hook and tool registration, preservation of unrelated agent fields, supported paths, strict TypeScript quality, and `bun` and `tsc` gates.
 
 ## Constraints
 

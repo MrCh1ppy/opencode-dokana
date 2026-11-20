@@ -18,13 +18,14 @@ void ({ edit: "unexpected-action" } satisfies DefaultPermission)
 // @ts-expect-error Default skill actions must be valid actions.
 void ({ skill: { "example-skill": "unexpected-action" } } satisfies DefaultPermission)
 
-test("the six default permission matrices match the approved snapshot", () => {
+test("the seven default permission matrices match the approved snapshot", () => {
   expect(defaultPermissions).toEqual({
-    sergeant: { edit: "allow", bash: "allow", external_directory: "ask", read: "allow", question: "allow", todowrite: "allow", grep: "allow", glob: "allow", list: "allow", webfetch: "allow", websearch: "allow", lsp: "allow", doom_loop: "allow", interrupt_session: "allow", task: { "*": "deny", explorer: "allow", "low-fixer": "allow", "medium-fixer": "allow", oracle: "allow", "deep-fixer": "ask" }, skill: { "*": "deny", "customize-opencode": "allow" } },
+    sergeant: { edit: "allow", bash: "allow", external_directory: "ask", read: "allow", question: "allow", todowrite: "allow", grep: "allow", glob: "allow", list: "allow", webfetch: "allow", websearch: "allow", lsp: "allow", doom_loop: "allow", interrupt_session: "allow", task: { "*": "deny", explorer: "allow", "low-worker": "allow", "medium-worker": "allow", "frontend-worker": "allow", oracle: "allow", "deep-worker": "ask" }, skill: { "*": "deny", "customize-opencode": "allow" } },
     explorer: { edit: "deny", bash: "allow", external_directory: "allow", task: "deny", glob: "allow", grep: "allow", list: "allow", webfetch: "allow", websearch: "allow", read: "allow", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow" } },
-    "low-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow", ponytail: "allow" } },
-    "medium-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow", ponytail: "allow" } },
-    "deep-fixer": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow", ponytail: "allow" } },
+    "low-worker": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow", ponytail: "allow" } },
+    "medium-worker": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow", ponytail: "allow" } },
+    "deep-worker": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow", ponytail: "allow" } },
+    "frontend-worker": { edit: "allow", bash: "allow", external_directory: "allow", task: "deny", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow", ponytail: "allow" } },
     oracle: { edit: "deny", bash: "deny", read: "allow", grep: "allow", glob: "allow", list: "allow", lsp: "allow", external_directory: "ask", task: "deny", interrupt_session: "deny", skill: { "*": "deny", "customize-opencode": "allow" } },
   })
 })
@@ -79,17 +80,18 @@ test("interrupt_session merges independently for every agent", () => {
 
 test("task tables merge by key with wildcard first", () => {
   const permission = effectivePermission("sergeant", {
-    task: { "medium-fixer": "deny", "*": "ask", oracle: "allow" },
+    task: { "medium-worker": "deny", "*": "ask", oracle: "allow" },
   })
   expect(permission.task).toEqual({
     "*": "ask",
     explorer: "allow",
-    "low-fixer": "allow",
-    "medium-fixer": "deny",
-    "deep-fixer": "ask",
+    "low-worker": "allow",
+    "medium-worker": "deny",
+    "frontend-worker": "allow",
+    "deep-worker": "ask",
     oracle: "allow",
   })
-  expect(Object.keys(permission.task as object)).toEqual(["*", "explorer", "low-fixer", "medium-fixer", "oracle", "deep-fixer"])
+  expect(Object.keys(permission.task as object)).toEqual(["*", "explorer", "low-worker", "medium-worker", "frontend-worker", "oracle", "deep-worker"])
 })
 
 test("a scalar task override replaces the complete task table", () => {
@@ -99,18 +101,18 @@ test("a scalar task override replaces the complete task table", () => {
 test("skill tables use ordered defaults and TOML overrides replace them completely", () => {
   for (const id of Object.keys(defaultPermissions) as Array<keyof typeof defaultPermissions>) {
     const skill = defaultPermissions[id].skill
-    expect(Object.keys(skill)).toEqual(id.endsWith("fixer")
+    expect(Object.keys(skill)).toEqual(id.endsWith("-worker")
       ? ["*", "customize-opencode", "ponytail"]
       : ["*", "customize-opencode"])
     expect(effectivePermission(id).skill).toEqual(skill)
   }
 
   const skill = { "*": "deny", "custom-skill": "allow" } as const
-  expect(effectivePermission("low-fixer", { skill }).skill).toEqual(skill)
-  expect(Object.keys(effectivePermission("low-fixer", { skill }).skill as object)).toEqual(["*", "custom-skill"])
+  expect(effectivePermission("low-worker", { skill }).skill).toEqual(skill)
+  expect(Object.keys(effectivePermission("low-worker", { skill }).skill as object)).toEqual(["*", "custom-skill"])
 })
 
-test("sergeant routes directly to specialists with deep-fixer gated to ask", () => {
+test("sergeant routes directly to specialists with deep-worker gated to ask", () => {
   const permission = effectivePermission("sergeant")
   expect(permission.edit).toBe("allow")
   expect(permission.bash).toBe("allow")
@@ -121,17 +123,18 @@ test("sergeant routes directly to specialists with deep-fixer gated to ask", () 
   expect(permission.webfetch).toBe("allow")
   expect(permission.doom_loop).toBe("allow")
   expect(permission.interrupt_session).toBe("allow")
-  // Every existing Specialist is callable; deep-fixer is ask, never allow.
+  // Every Specialist is callable; deep-worker requires approval by default.
   expect(permission.task).toEqual({
     "*": "deny",
     explorer: "allow",
-    "low-fixer": "allow",
-    "medium-fixer": "allow",
+    "low-worker": "allow",
+    "medium-worker": "allow",
+    "frontend-worker": "allow",
     oracle: "allow",
-    "deep-fixer": "ask",
+    "deep-worker": "ask",
   })
-  // The wildcard stays first so last-match-wins keeps the specific deep-fixer ask rule final.
-  expect(Object.keys(permission.task as object)).toEqual(["*", "explorer", "low-fixer", "medium-fixer", "oracle", "deep-fixer"])
+  // The wildcard stays first so last-match-wins keeps the specific deep-worker ask rule final.
+  expect(Object.keys(permission.task as object)).toEqual(["*", "explorer", "low-worker", "medium-worker", "frontend-worker", "oracle", "deep-worker"])
 })
 
 test("effective permission creation never mutates default constants", () => {
